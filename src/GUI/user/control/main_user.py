@@ -6,13 +6,14 @@ import json
 import os
 
 # --- IMPORT CÁC TRANG CON ---
-from GUI.user.control.page.phien_lai import PhienLaiPage
-from GUI.user.control.page.cai_dat import CaiDatPage
+# Sử dụng relative imports để tránh lỗi ModuleNotFoundError
+from .page.phien_lai import PhienLaiPage
+from .page.cai_dat import CaiDatPage
 # [CẬP NHẬT 1] Import trang Tiện Ích
 try:
-    from GUI.user.control.page.tien_ich import TienIchPage
-except ImportError:
-    print("Lỗi: Không tìm thấy file tien_ich.py")
+    from .page.tien_ich import TienIchPage
+except ImportError as e:
+    print(f"Lỗi import tien_ich.py: {e}")
     TienIchPage = None
 
 # Đường dẫn đến file dữ liệu

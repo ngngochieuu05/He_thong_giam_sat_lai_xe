@@ -1,41 +1,69 @@
-# Driver Monitoring System - Requirements
-# Hệ thống Giám Sát Lái Xe
+# ========================================
+# HỆ THỐNG GIÁM SÁT LÁI XE - DRIVER MONITORING SYSTEM
+# Requirements File - Generated: 2026-01-29
+# ========================================
 
-# Computer Vision & Face Recognition
-opencv-python>=4.8.0
-mediapipe>=0.10.0
-# face-recognition>=1.3.0  # Optional: Requires large face-recognition-models (100MB+)
+# --- GUI FRAMEWORK ---
+flet==0.28.3
+flet-desktop==0.28.3
 
-# Deep Learning & YOLO
-ultralytics>=8.0.0
-# torch>=2.0.0  # Optional: For GPU support, install from pytorch.org
-# torchvision>=0.15.0  # Optional: Depends on torch
+# --- COMPUTER VISION & IMAGE PROCESSING ---
+opencv-python==4.12.0.88
+pillow==12.0.0
+matplotlib==3.10.7
 
-# Data Processing
-numpy>=1.24.0
-scipy>=1.11.0
-pillow>=10.0.0
+# --- AI & DEEP LEARNING ---
+torch==2.9.0
+torchvision==0.24.0
+ultralytics==8.3.214
+ultralytics-thop==2.0.17
 
-# API Communication
-requests>=2.31.0
+# --- SCIENTIFIC COMPUTING ---
+numpy==2.2.6
+pandas==2.3.3
+scipy==1.16.2
+scikit-learn==1.7.2
 
-# Serial Communication (ESP32/Arduino)
-pyserial>=3.5
+# --- NLP & TEXT PROCESSING ---
+spacy==3.8.11
+en_core_web_sm==3.8.0
 
-# GUI Framework
-flet>=0.21.0
+# --- WEB & API ---
+requests==2.32.5
+Flask==3.1.2
+flask-cors==6.0.1
 
-# Utilities
-python-dateutil>=2.8.2
+# --- GOOGLE AI & CLOUD ---
+google-generativeai==0.8.6
+google-ai-generativelanguage==0.6.15
+google-api-python-client==2.187.0
 
-# Optional: Database (SQLite built-in, these for other DBs)
-# sqlalchemy>=2.0.0
-# pymongo>=4.5.0
+# --- AUDIO & SPEECH ---
+gTTS==2.5.4
+pyttsx3==2.99
+SpeechRecognition==3.14.5
+PyAudio==0.2.14
 
-# Optional: Web Interface
-# flask>=3.0.0
-# flask-cors>=4.0.0
+# --- TRANSLATION & LANGUAGE ---
+deep-translator==1.11.4
+googletrans==3.1.0a0
 
-# Optional: Data Visualization
-# matplotlib>=3.7.0
-# pandas>=2.0.0
+# --- UTILITIES ---
+python-dotenv==1.2.1
+python-docx==1.2.0
+qrcode==8.2
+pyperclip==1.11.0
+
+# --- DATABASE ---
+pyodbc==5.3.0
+
+# --- WINDOWS SPECIFIC ---
+pywin32==311
+pypiwin32==223
+
+# --- OTHERS ---
+tqdm==4.67.1
+coloredlogs==15.0.1
+
+# NOTE: Để cài đặt tất cả dependencies, chạy:
+# pip install -r requirements.txt

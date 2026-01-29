@@ -43,7 +43,7 @@ def main(page: ft.Page, go_back_callback=None):
             page.update()
             
             # Import và chuyển sang main_user với callback để quay lại
-            from GUI.user.control import main_user
+            from ..control import main_user
             app = main_user.UserApp(page, go_back_callback=lambda: main(page, go_back_callback))
         except Exception as ex:
             page.open(ft.SnackBar(ft.Text(f"Lỗi khởi động: {ex}"), bgcolor=ft.Colors.RED_600))
