@@ -1,0 +1,41 @@
+# Driver Monitoring System - Requirements
+# Hệ thống Giám Sát Lái Xe
+
+# Computer Vision & Face Recognition
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+# face-recognition>=1.3.0  # Optional: Requires large face-recognition-models (100MB+)
+
+# Deep Learning & YOLO
+ultralytics>=8.0.0
+# torch>=2.0.0  # Optional: For GPU support, install from pytorch.org
+# torchvision>=0.15.0  # Optional: Depends on torch
+
+# Data Processing
+numpy>=1.24.0
+scipy>=1.11.0
+pillow>=10.0.0
+
+# API Communication
+requests>=2.31.0
+
+# Serial Communication (ESP32/Arduino)
+pyserial>=3.5
+
+# GUI Framework
+flet>=0.21.0
+
+# Utilities
+python-dateutil>=2.8.2
+
+# Optional: Database (SQLite built-in, these for other DBs)
+# sqlalchemy>=2.0.0
+# pymongo>=4.5.0
+
+# Optional: Web Interface
+# flask>=3.0.0
+# flask-cors>=4.0.0
+
+# Optional: Data Visualization
+# matplotlib>=3.7.0
+# pandas>=2.0.0
