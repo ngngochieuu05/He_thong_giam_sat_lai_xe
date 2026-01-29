@@ -1,0 +1,21 @@
+{
+  "admin_accounts": [
+    {
+      "username": "admin",
+      "password": "admin",
+      "name": "Nguyễn Ngọc Hiếu",
+      "role": "Super Admin"
+    }
+  ],
+  "user_accounts": [
+    {
+      "username": "user01",
+      "password": "123456",
+      "name": "Nguyễn Ngọc Hiếu",
+      "driver_id": "TX001",
+      "phone": "0123456789",
+      "license": "079123456789",
+      "plan": "Pro"
+    }
+  ]
+}
