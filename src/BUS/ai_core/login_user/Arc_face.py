@@ -14,6 +14,22 @@ import base64
 from pathlib import Path
 from typing import Dict, Tuple, Optional, List
 from datetime import datetime
+import sys
+import os
+
+# Context manager để tắt output (bao gồm cả C++ output nếu có thể)
+class SuppressOutput:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
 
 # Cryptography
 from Crypto.Cipher import AES
@@ -30,22 +46,48 @@ def log_print(*args, **kwargs):
 # ==================================================
 
 # ML/AI
-try:
-    from ultralytics import YOLO
-    import insightface
-    from insightface.app import FaceAnalysis
-    from sklearn.metrics.pairwise import cosine_similarity
-    HAS_MODELS = True
-except ImportError as e:
-    import traceback
-    traceback.print_exc()
-    HAS_MODELS = False
-    FaceAnalysis = None  # Set to None if import fails
-except Exception as e:
-    import traceback
-    traceback.print_exc()
-    HAS_MODELS = False
-    FaceAnalysis = None
+# Global placeholders for Lazy Loading
+YOLO = None
+FaceAnalysis = None
+cosine_similarity = None
+HAS_MODELS = False
+AI_LIBS_LOADED = False
+
+def _load_ai_libs():
+    """Lazy load heavy AI libraries"""
+    global YOLO, FaceAnalysis, cosine_similarity, HAS_MODELS, AI_LIBS_LOADED
+    
+    if AI_LIBS_LOADED:
+        return
+
+    log_print("⏳ [SYSTEM] Loading AI libraries (Lazy Import)...")
+    try:
+        from ultralytics import YOLO as _YOLO
+        import insightface
+        from insightface.app import FaceAnalysis as _FaceAnalysis
+        from sklearn.metrics.pairwise import cosine_similarity as _cosine_similarity
+        
+        # Suppress ONNX Runtime warnings
+        try:
+            import onnxruntime
+            onnxruntime.set_default_logger_severity(3)
+        except:
+            pass
+            
+        YOLO = _YOLO
+        FaceAnalysis = _FaceAnalysis
+        cosine_similarity = _cosine_similarity
+        HAS_MODELS = True
+        AI_LIBS_LOADED = True
+        log_print("✅ [SYSTEM] AI libraries loaded successfully")
+    except ImportError as e:
+        import traceback
+        traceback.print_exc()
+        HAS_MODELS = False
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        HAS_MODELS = False
 
 # Base interface
 from src.BUS.ai_core.login_user.base_face_model import BaseFaceModel
@@ -64,6 +106,9 @@ class YOLOv8FaceDetector:
             confidence_threshold: Ngưỡng độ tin cậy (0.0-1.0)
             min_face_size: Kích thước khuôn mặt tối thiểu (pixels)
         """
+        # Ensure libs are loaded
+        _load_ai_libs()
+        
         self.confidence_threshold = confidence_threshold
         self.min_face_size = min_face_size
         
@@ -141,17 +186,21 @@ class ArcFaceEmbedding:
     
     def __init__(self):
         """Khởi tạo ArcFace model"""
+        # Ensure libs are loaded
+        _load_ai_libs()
+
         if not HAS_MODELS or FaceAnalysis is None:
             log_print("❌ [InsightFace] Libraries not installed or import failed")
             self.app = None
             return
             
         try:
+            # Revert SuppressOutput as it breaks InsightFace logic
             self.app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
             self.app.prepare(ctx_id=0, det_size=(640, 640))
-            log_print("✅ [InsightFace] ArcFace embedding model initialized")
+            log_print("✅ [InsightFace] Model ArcFace embedding đã khởi tạo")
         except Exception as e:
-            pass
+            print(f"❌ [InsightFace] Init failed: {e}")
             self.app = None
     
     def extract_embedding(self, face_image: np.ndarray) -> Optional[np.ndarray]:
@@ -174,7 +223,7 @@ class ArcFaceEmbedding:
             faces = self.app.get(face_rgb)
             
             if len(faces) == 0:
-                pass
+                print(f"⚠️ [InsightFace] Không tìm thấy khuôn mặt trong crop image (Shape: {face_rgb.shape})")
                 return None
             
             # Lấy embedding của khuôn mặt đầu tiên

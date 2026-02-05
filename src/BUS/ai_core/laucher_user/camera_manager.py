@@ -3,6 +3,8 @@ import base64
 import threading
 import time
 import os
+import tempfile
+from pathlib import Path
 from .sleep_detector import SleepDetector
 
 class CameraManager:
@@ -10,7 +12,7 @@ class CameraManager:
         """
         Quản lý camera cho giao diện người dùng chính (Driver Dashboard).
         :param update_callback: Hàm callback nhận chuỗi base64 image để cập nhật UI
-        :param alert_callback: Hàm callback nhận thông báo cảnh báo (msg)
+        :param alert_callback: Hàm callback nhận thông báo cảnh báo (msg, img_path=None)
         :param camera_index: Chỉ số camera (0: default)
         """
         self.camera_index = camera_index
@@ -102,9 +104,25 @@ class CameraManager:
                     # Nếu nhắm mắt >= 1.5s VÀ chưa báo động lần nào trong đợt này
                     if duration >= 1.5 and not self.is_sleeping_alert_sent:
                         self.is_sleeping_alert_sent = True # Đã báo, không spam nữa
+                        
+                        # CAPTURE EVIDENCE IMAGE
+                        img_path = None
+                        try:
+                            # Tạo tên file unique
+                            temp_dir = tempfile.gettempdir()
+                            timestamp = int(time.time())
+                            img_path = os.path.join(temp_dir, f"alert_drowsy_{timestamp}.jpg")
+                            
+                            # Lưu ảnh frame hiện tại (đã có bbox)
+                            cv2.imwrite(img_path, frame)
+                        except Exception as e:
+                            print(f"❌ [CAMERA] Failed to save evidence image: {e}")
+                            img_path = None
+                        
                         if self.alert_callback:
-                            self.alert_callback(f"⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!")
-                            print(f"⚠️ [ALERT] Start sleeping event detected")
+                            # Truyền thêm tham số img_path
+                            self.alert_callback(f"⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!", img_path=img_path)
+                            print(f"⚠️ [ALERT] Start sleeping event detected. Evidence saved to {img_path}")
                             
                 else:
                     # Người dùng mở mắt lại
@@ -132,6 +150,10 @@ class CameraManager:
                     self.update_callback(b64_img)
             
             except Exception as e:
+                msg = str(e)
+                if "UI_CLOSED" in msg or "socket" in msg.lower() or "closed" in msg.lower():
+                    # Stop loop silently if UI is closed
+                    break
                 print(f"⚠️ [CAMERA] Lỗi xử lý frame: {e}")
             
             # Giới hạn FPS (~30fps)

@@ -37,43 +37,54 @@ class SuppressOutput:
         sys.stderr = self._original_stderr
 # ============================================================
 
-# Import AI model ở top level để tránh import trong thread
-try:
-    from src.BUS.ai_core.login_user.Arc_face import ArcFaceModel
-    ARCFACE_AVAILABLE = True
-except Exception as e:
-    import traceback
-    traceback.print_exc()
-    ARCFACE_AVAILABLE = False
-    ArcFaceModel = None
+# Import moved to lazy function
+ArcFaceModel = None
+ARCFACE_AVAILABLE = True # Assume true initially, check in function
 
 # Singleton instance của model (khởi tạo 1 lần duy nhất)
 _global_arcface_model = None
+_model_lock = threading.Lock()
 
 def get_arcface_model(config=None):
     """
     Lấy singleton instance của ArcFace model
     Chỉ khởi tạo 1 lần duy nhất trong toàn bộ ứng dụng
     """
-    global _global_arcface_model
+    global _global_arcface_model, ArcFaceModel, ARCFACE_AVAILABLE
     
-    if not ARCFACE_AVAILABLE:
-        print("❌ [MODEL] ArcFace not available")
-        return None
-    
-    if _global_arcface_model is None:
-        if config is None:
-            config = {
-                'confidence_threshold': 0.5,
-                'min_face_size': 30,
-                'cosine_threshold': 0.5
-            }
+    with _model_lock:
+        # Lazy import logic
+        if ArcFaceModel is None:
+            try:
+                from src.BUS.ai_core.login_user.Arc_face import ArcFaceModel as _Model
+                ArcFaceModel = _Model
+                ARCFACE_AVAILABLE = True
+            except ImportError:
+                print("❌ [MODEL] ArcFace module not found")
+                ARCFACE_AVAILABLE = False
+                return None
+            except Exception as e:
+                print(f"❌ [MODEL] Error loading ArcFace module: {e}")
+                ARCFACE_AVAILABLE = False
+                return None
         
-        print("🔧 [MODEL] Initializing ArcFace model (first time)...")
-        _global_arcface_model = ArcFaceModel(config)
-        print("✅ [MODEL] ArcFace model initialized and cached")
-    
-    return _global_arcface_model
+        if not ARCFACE_AVAILABLE:
+            print("❌ [MODEL] ArcFace not available")
+            return None
+        
+        if _global_arcface_model is None:
+            if config is None:
+                config = {
+                    'confidence_threshold': 0.5,
+                    'min_face_size': 30,
+                    'cosine_threshold': 0.5
+                }
+            
+            print("🔧 [MODEL] Initializing ArcFace model (first time)...")
+            _global_arcface_model = ArcFaceModel(config)
+            print("✅ [MODEL] ArcFace model initialized and cached")
+        
+        return _global_arcface_model
 
 
 class UserUI:
@@ -104,6 +115,21 @@ class UserUI:
 
         # Khởi động vào màn hình Đăng nhập
         self.show_login_view()
+        
+        # PRE-LOAD AI MODEL IN BACKGROUND
+        # Giúp giảm thời gian chờ khi bấm nút "Đăng nhập khuôn mặt"
+        self._preload_ai_model()
+
+    def _preload_ai_model(self):
+        print("🚀 [BACKGROUND] Pre-loading AI model...")
+        def _load_task():
+             try:
+                # Gọi hàm này sẽ kích hoạt lazy load thư viện + init model
+                get_arcface_model()
+             except Exception as e:
+                print(f"⚠️ [PRELOAD] Failed: {e}")
+        
+        threading.Thread(target=_load_task, daemon=True).start()
 
     # =========================================================================
     # 1. MÀN HÌNH ĐĂNG NHẬP (LOGIN VIEW)
@@ -649,15 +675,23 @@ class UserUI:
                 progress_ring.update()
                 
             except Exception as ex:
+                # Nếu lỗi do đóng app thường chứa từ khóa socket hoặc disconnected
+                msg = str(ex).lower()
+                if "socket" in msg or "closed" in msg or "ui_closed" in msg:
+                    return
+
                 print(f"❌ [INIT ERROR]: {ex}")
-                import traceback
-                traceback.print_exc()
+                # import traceback
+                # traceback.print_exc()
                 
                 dialog_message.value = f"❌ Lỗi: {str(ex)}"
                 dialog_message.color = ft.Colors.RED
                 progress_ring.visible = False
-                dialog_message.update()
-                progress_ring.update()
+                try:
+                    dialog_message.update()
+                    progress_ring.update()
+                except:
+                    pass
         
         def update_frame(base64_img: str):
             """Update camera view - Batch update mỗi 2 frames"""
@@ -667,8 +701,9 @@ class UserUI:
                 camera_view.src_base64 = base64_img.split(",")[1]
                 if frame_counter % 2 == 0:
                     camera_view.update()
-            except Exception as e:
-                print(f"⚠️  [FRAME UPDATE] Error: {e}")
+            except Exception:
+                # Nếu update thất bại (do app đóng), raise lỗi để camera_preview nhận biết và dừng loop
+                raise Exception("UI_CLOSED")
         
         def on_auto_capture(frame: 'np.ndarray', arcface_model):
             """Callback khi tự động chụp ảnh - So sánh với face_data đã lưu"""
@@ -740,9 +775,14 @@ class UserUI:
                     self.page.update()
                     
                 except Exception as ex:
+                    # Nếu lỗi do đóng app
+                    msg = str(ex).lower()
+                    if "socket" in msg or "closed" in msg or "ui_closed" in msg:
+                        return
+
                     print(f"❌ [ERROR] Face verification failed: {ex}")
-                    import traceback
-                    traceback.print_exc()
+                    # import traceback
+                    # traceback.print_exc()
                     
                     dialog_message.value = f"❌ Lỗi: {str(ex)}\\nVui lòng thử lại."
                     dialog_message.color = ft.Colors.RED
@@ -752,7 +792,11 @@ class UserUI:
                     if camera:
                         camera.reset_capture()
                     
-                    dialog_message.update()
+                    try:
+                        dialog_message.update()
+                        progress_ring.update()
+                    except:
+                        pass
                     progress_ring.update()
             
             # Chạy trong background thread

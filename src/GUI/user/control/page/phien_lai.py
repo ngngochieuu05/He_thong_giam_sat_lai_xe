@@ -156,7 +156,7 @@ class PhienLaiPage(ft.Column):
         )
     
     # --- ALERT LOGIC ---
-    def handle_alert_callback(self, message: str, type: str = "warning"):
+    def handle_alert_callback(self, message: str, type: str = "warning", img_path: str = None):
         """Callback khi nhận cảnh báo từ AI"""
         current_time = time.strftime("%H:%M")
         full_time = time.strftime("%H:%M:%S %d/%m/%Y")
@@ -177,10 +177,28 @@ class PhienLaiPage(ft.Column):
 
 <i>Hệ thống tự động phát hiện dấu hiệu buồn ngủ.</i>"""
                 
+                # Hàm gửi nội bộ chạy trong thread
+                def _send_tele_alert():
+                    try:
+                        if img_path:
+                            # Gửi ảnh kèm caption
+                            self.oa_service.send_photo(token, chat_id, img_path, tele_msg)
+                            # Xóa ảnh tạm sau khi gửi
+                            try:
+                                import os
+                                os.remove(img_path)
+                                print(f"🗑️ [CLEANUP] Deleted temp image: {img_path}")
+                            except Exception as e:
+                                print(f"⚠️ [CLEANUP] Failed to delete temp image: {e}")
+                        else:
+                            # Gửi tin nhắn text
+                            self.oa_service.send_message(token, chat_id, tele_msg)
+                    except Exception as e:
+                        print(f"❌ [TELEGRAM] Error sending alert: {e}")
+
                 # Chạy trong thread riêng để không block UI camera
                 threading.Thread(
-                    target=self.oa_service.send_message,
-                    args=(token, chat_id, tele_msg),
+                    target=_send_tele_alert,
                     daemon=True
                 ).start()
         
@@ -191,7 +209,10 @@ class PhienLaiPage(ft.Column):
         if len(self.log_list.controls) > 50:
             self.log_list.controls.pop()
             
-        self.log_list.update()
+        try:
+            self.log_list.update()
+        except Exception:
+            pass
 
     # --- HELPERS ---
     def _create_log_item(self, time, msg, type):
@@ -244,8 +265,12 @@ class PhienLaiPage(ft.Column):
 
     # --- CAMERA LOGIC ---
     def update_camera_frame(self, b64_frame):
-        self.camera_image.src_base64 = b64_frame
-        self.camera_image.update()
+        try:
+            self.camera_image.src_base64 = b64_frame
+            self.camera_image.update()
+        except Exception:
+            # Raise để CameraManager biết là UI đã đóng -> Stop loop
+            raise Exception("UI_CLOSED")
 
     def did_mount(self):
         # Được gọi khi control được thêm vào page

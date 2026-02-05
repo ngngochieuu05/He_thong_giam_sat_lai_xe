@@ -136,7 +136,13 @@ class LiveCameraPreview:
             
             # Callback để update UI
             if self.on_frame_callback:
-                self.on_frame_callback(f"data:image/jpeg;base64,{img_base64}")
+                try:
+                    self.on_frame_callback(f"data:image/jpeg;base64,{img_base64}")
+                except Exception as e:
+                    # Nếu UI đã đóng (lỗi socket), dừng camera ngay lập tức
+                    # log_print(f"⚠️ [CAMERA] UI connection lost: {e}")
+                    self.is_running = False
+                    break
             
             # Target 30 FPS
             time.sleep(0.033)
@@ -168,7 +174,7 @@ class LiveCameraPreview:
         
         # Text hướng dẫn
         if not self.face_detected:
-            text = "Dat mat vao khung oval"
+            text = "Dua mat vao khung oval"
             text_color = (255, 255, 255)
         else:
             text = "Dang xu ly..."

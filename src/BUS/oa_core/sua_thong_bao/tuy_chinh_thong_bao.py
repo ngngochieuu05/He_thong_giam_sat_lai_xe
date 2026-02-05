@@ -108,6 +108,64 @@ class ThongBaoService:
             }
             self.save_log(log_data)
             return {"ok": False, "error": error_msg}
+
+    def send_photo(self, token: str, chat_id: str, image_path: str, caption: str = "") -> Dict:
+        """
+        Gửi ẢNH đến Telegram chat (multipart/form-data)
+        
+        Args:
+            token: Bot token
+            chat_id: Chat ID đích
+            image_path: Đường dẫn file ảnh
+            caption: Chú thích ảnh (hỗ trợ HTML)
+            
+        Returns:
+            Dict kết quả
+        """
+        try:
+            url = f"https://api.telegram.org/bot{token}/sendPhoto"
+            
+            # Kiểm tra file
+            if not os.path.exists(image_path):
+                return {"ok": False, "error": f"File not found: {image_path}"}
+                
+            with open(image_path, 'rb') as img_file:
+                # Multipart form data
+                files = {
+                    'photo': img_file
+                }
+                data = {
+                    'chat_id': chat_id,
+                    'caption': caption,
+                    'parse_mode': 'HTML'
+                }
+                
+                response = requests.post(url, data=data, files=files, timeout=20)
+                result = response.json()
+                
+                # Lưu log
+                log_data = {
+                    "time": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "chat_id": chat_id,
+                    "content": f"[PHOTO] {caption[:100]}...",
+                    "status": "success" if result.get("ok") else "fail",
+                    "error": "" if result.get("ok") else result.get("description", "Unknown error")
+                }
+                self.save_log(log_data)
+                
+                return result
+                
+        except Exception as e:
+            error_msg = str(e)
+            log_data = {
+                "time": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "chat_id": chat_id,
+                "content": f"[PHOTO FAIL] {caption[:100]}...",
+                "status": "fail",
+                "error": error_msg
+            }
+            self.save_log(log_data)
+            return {"ok": False, "error": error_msg}
     
     def test_connection(self, token: str) -> Dict:
         """
