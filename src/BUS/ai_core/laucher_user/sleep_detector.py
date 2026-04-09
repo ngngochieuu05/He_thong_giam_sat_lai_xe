@@ -29,22 +29,20 @@ class SleepDetector:
             print(f"❌ [AI CORE] Error loading model: {e}")
             self.is_loaded = False
 
-    def predict(self, frame, conf=0.15):
+    def predict(self, frame, conf=0.15, iou=0.45):
         """
         Run inference on a single frame
         :param frame: Input image (BGR)
         :param conf: Confidence threshold (lower = more sensitive)
+        :param iou: IoU threshold for NMS
         :return: annotated_frame, detections, is_drowsy
         """
         if not self.is_loaded or self.model is None:
             return frame, [], False
 
         try:
-            # Run inference with lower confidence threshold
-            results = self.model(frame, verbose=False, conf=conf)
-            
-            # Draw detections
-            annotated_frame = results[0].plot() 
+            # Run inference with configured thresholds
+            results = self.model(frame, verbose=False, conf=conf, iou=iou)
             
             detections = []
             is_drowsy = False
@@ -72,7 +70,10 @@ class SleepDetector:
                     if any(k in cls_name.lower() for k in keys):
                         is_drowsy = True
 
-            return annotated_frame, detections, is_drowsy
+            # Trả về frame gốc + detections.
+            # Việc vẽ bbox sẽ được CameraManager thực hiện liên tục trên mọi frame
+            # để tránh hiện tượng nhấp nháy khi AI chạy theo chu kỳ.
+            return frame, detections, is_drowsy
             
         except Exception as e:
             print(f"⚠️ [AI CORE] Inference error: {e}")

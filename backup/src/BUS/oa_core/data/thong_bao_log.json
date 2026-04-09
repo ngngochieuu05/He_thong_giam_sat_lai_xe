@@ -1,0 +1,578 @@
+{
+  "logs": [
+    {
+      "time": "05/02/2026 14:07:52",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>Cảnh báo!</b>\nHệ thống phát hiện tài xế có dấu hiệu buồn ngủ.",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:07:56",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO HỆ THỐNG</b>\n\n⚠️ <b>Loại:</b> Phát hiện buồn ngủ\n👤 <b>Tài xế:</b> Nguyễn Văn A\n🚗 <b>Biển số:</b> 30A-12345\n📍 <b>Vị trí:</b> Quốc lộ 1A, Km 52\n⏰ <b>Thời gian:</b> 14:07:55 05/02/2026\n\n<i>",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:40:51",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:40:50 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:41:11",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:41:10 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:47:41",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:47:40 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:47:48",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:47:47 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:48:08",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:48:07 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:48:15",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:48:14 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:48:20",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:48:19 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:48:25",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:48:24 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:56:30",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:56:29 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 14:56:46",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:56:45 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 18:52:08",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 18:52:07 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 18:52:19",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 18:52:19 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 18:52:35",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 18:52:34 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 18:53:14",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 18:53:13 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 18:53:16",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 18:53:15 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 18:53:20",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 18:53:19 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 18:55:06",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 18:55:05 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 19:01:18",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:01:17 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 19:04:15",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:04:15 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 19:04:21",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:04:20 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 19:04:30",
+      "chat_id": "6438032152",
+      "content": "🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:04:29 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ CẢNH BÁO: ĐANG NGỦ GẬT!\n📸 <b>Camera:</b> Dashboard (AI Detected)\n\n<i>Hệ thống tự động phát hiện dấu ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 19:12:26",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:12:24 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "05/02/2026 19:12:32",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:12:30 05/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "08/02/2026 20:24:30",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 20:24:27 08/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "08/02/2026 20:25:54",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 20:25:52 08/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "08/02/2026 20:26:07",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 20:26:06 08/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:38",
+      "chat_id": "5876915618",
+      "content": "⚠️ Cú pháp: /set_chatid [ID]\n\nVí dụ: /set_chatid 123456789",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:39",
+      "chat_id": "5876915618",
+      "content": "📋 5 Log gần nhất\n\n1. ✅ 09/02/2026 13:33:38\n   ⚠️ Cú pháp: /set_chatid [ID]\n\nVí dụ: /set_chatid 123456789\n\n2. ✅ 08/02/2026 20:26:07\n   [PHOTO] 🚨 &lt;b&gt;CẢNH BÁO: TÀI XẾ BUỒN NGỦ!&lt;/b&gt;\n\n⏰ &lt;b&g",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:40",
+      "chat_id": "5876915618",
+      "content": "📊 <b>Trạng thái Hệ thống</b>\n\n🔹 <b>Trạng thái:</b> 🟢 Đang hoạt động\n🔹 <b>Uptime:</b> 0h 0m 3s\n🔹 <b>Cảnh báo:</b> 🟢 BẬT\n🔹 <b>Debug:</b> ⚪ TẮT\n🔹 <b>Thời gian:</b> 13:33:39 09/02/2026",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:41",
+      "chat_id": "5876915618",
+      "content": "🏓 Pong! Bot đang hoạt động bình thường.",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:42",
+      "chat_id": "5876915618",
+      "content": "⏱️ <b>Thời gian hoạt động</b>\n\n🔹 <b>Uptime:</b> 0 ngày, 0 giờ, 0 phút, 5 giây\n🔹 <b>Khởi động:</b> 13:33:36 09/02/2026",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:44",
+      "chat_id": "5876915618",
+      "content": "🐛 Đã TẮT chế độ debug.",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:45",
+      "chat_id": "5876915618",
+      "content": "🤖 <b>Hệ thống Giám sát Lái xe</b>\n\nChào mừng bạn đến với bot thông báo!\n\n<b>📋 Các lệnh có sẵn:</b>\n\n<b>🔧 Hệ thống:</b>\n/status - Trạng thái hệ thống\n/ping - Kiểm tra kết nối\n/uptime - Thời gian hoạt đ",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:46",
+      "chat_id": "5876915618",
+      "content": "📊 <b>Trạng thái Hệ thống</b>\n\n🔹 <b>Trạng thái:</b> 🟢 Đang hoạt động\n🔹 <b>Uptime:</b> 0h 0m 9s\n🔹 <b>Cảnh báo:</b> 🟢 BẬT\n🔹 <b>Debug:</b> ⚪ TẮT\n🔹 <b>Thời gian:</b> 13:33:45 09/02/2026",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:47",
+      "chat_id": "5876915618",
+      "content": "🔔 Đã BẬT cảnh báo.",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:48",
+      "chat_id": "5876915618",
+      "content": "📊 <b>Trạng thái Hệ thống</b>\n\n🔹 <b>Trạng thái:</b> 🟢 Đang hoạt động\n🔹 <b>Uptime:</b> 0h 0m 11s\n🔹 <b>Cảnh báo:</b> 🟢 BẬT\n🔹 <b>Debug:</b> ⚪ TẮT\n🔹 <b>Thời gian:</b> 13:33:47 09/02/2026",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "09/02/2026 13:33:50",
+      "chat_id": "5876915618",
+      "content": "🏓 Pong! Bot đang hoạt động bình thường.",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/02/2026 19:27:29",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:27:26 11/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/02/2026 19:27:39",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:27:37 11/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/02/2026 19:28:16",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:28:13 11/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/02/2026 19:28:19",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 19:28:17 11/02/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 13:29:01",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 13:28:57 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 13:30:06",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 13:30:02 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:15:27",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:15:23 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:15:32",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:15:29 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:15:42",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:15:37 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:15:51",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:15:48 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:16:05",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:02 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:16:14",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:11 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:16:21",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:17 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:16:27",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:23 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:16:39",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:35 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:16:47",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:44 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:16:54",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:51 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:17:00",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:16:57 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:31:23",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:31:19 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:31:37",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:31:34 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:31:47",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:31:43 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:45:02",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:44:59 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:45:11",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:45:08 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:45:22",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:45:19 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:45:37",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:45:33 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:45:41",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:45:38 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:45:49",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:45:46 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:46:04",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:45:59 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:46:08",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:46:05 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:46:14",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:46:10 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:47:38",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:47:28 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:47:39",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:47:23 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:47:55",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:47:52 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:48:05",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:47:59 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 14:48:19",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 14:48:13 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:23:55",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:23:50 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:23:59",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:23:55 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:35:57",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:35:53 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:59:12",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:59:09 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:59:23",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:59:19 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:59:29",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:59:25 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:59:37",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:59:33 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    },
+    {
+      "time": "11/03/2026 15:59:42",
+      "chat_id": "6438032152",
+      "content": "[PHOTO] 🚨 <b>CẢNH BÁO: TÀI XẾ BUỒN NGỦ!</b>\n\n⏰ <b>Thời gian:</b> 15:59:38 11/03/2026\n⚠️ <b>Nội dung:</b> ⚠️ ...",
+      "status": "success",
+      "error": ""
+    }
+  ]
+}

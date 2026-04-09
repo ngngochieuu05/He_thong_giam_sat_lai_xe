@@ -1,21 +1,26 @@
 {
   "face_recognition": {
     "model_name": "ArcFace (v2.1)",
-    "model_path": "D:\\appGS\\appgiamsat\\He_thong_giam_sat_lai_xe-develop\\models\\trained_model_Login\\best.pt",
-    "confidence_threshold": 0.8,
-    "min_face_size": 40,
-    "cosine_threshold": 0.35
+    "model_path": "D:\\AppGS_v2\\giam_sat_lai_xe\\models\\trained_model_Login\\best.pt",
+    "confidence_threshold": 0.71,
+    "min_face_size": 51,
+    "cosine_threshold": 0.55
   },
   "drowsiness_detection": {
-    "model_name": "YOLOv8n-Drowsy (v1.0)",
-    "model_path": "E:\\appgiamsat\\He_thong_giam_sat_lai_xe-develop\\models\\trained_modek_Run\\best.pt",
-    "confidence_threshold": 0.5,
-    "iou_threshold": 0.45
+    "model_path": "E:\\code\\AppGS_v2\\giam_sat_lai_xe\\models\\trained_modek_Run\\best.pt",
+    "confidence_threshold": 0.35,
+    "iou_threshold": 0.5
   },
   "camera": {
     "default_index": 0,
     "resolution_width": 640,
     "resolution_height": 480,
     "fps": 30
+  },
+  "ai_api": {
+    "groq_api_key": "YOUR_GROQ_API_KEY_HERE",
+    "weather_api_key": "YOUR_WEATHER_API_KEY_HERE",
+    "city": "Ho Chi Minh City",
+    "youtube_api_key": "YOUR_YOUTUBE_API_KEY_HERE"
   }
 }

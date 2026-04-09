@@ -1,6 +1,7 @@
 import flet as ft
 import os
 import time
+from ..control.ui_styles import BORDER, PRIMARY, SECONDARY, WARNING, DANGER, elevated_button, glass_card, icon_button
 
 def main(page: ft.Page, go_back_callback=None):
     # --- 1. CẤU HÌNH CỬA SỔ TỐI ƯU (RESPONSIVE) ---
@@ -16,7 +17,7 @@ def main(page: ft.Page, go_back_callback=None):
     
     page.window_resizable = True
     page.padding = 0
-    page.theme_mode = ft.ThemeMode.LIGHT
+    page.theme_mode = ft.ThemeMode.DARK
     
     # Căn giữa nội dung theo chiều ngang khi phóng to
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
@@ -99,149 +100,138 @@ def main(page: ft.Page, go_back_callback=None):
 
     # ==============================================================================
 
-    # --- HÀM TẠO NÚT BẤM ---
-    def create_custom_button(text, subtitle, icon_name, bg_color, func_action, border_color=ft.Colors.BLACK):
+    def _animate_hover(e):
+        e.control.scale = 1.02 if e.data == "true" else 1.0
+        e.control.update()
+
+    def create_action_button(text, subtitle, icon_name, kind, func_action):
+        accent = PRIMARY if kind == "primary" else (WARNING if kind == "warning" else DANGER)
         return ft.Container(
-            width=320,
-            height=90,
-            bgcolor=bg_color,
-            border_radius=15,
-            border=ft.border.all(1, border_color),
-            shadow=ft.BoxShadow(
-                spread_radius=0, blur_radius=4, color=ft.Colors.BLACK38, offset=ft.Offset(0, 4),
-            ),
-            content=ft.Row([
-                ft.Container(
-                    width=55, height=55,
-                    border=ft.border.all(2, ft.Colors.BLACK),
-                    border_radius=30,
-                    alignment=ft.alignment.center,
-                    content=ft.Icon(icon_name, size=30, color=ft.Colors.BLACK),
-                ),
-                ft.Container(width=15),
-                ft.Column([
-                    ft.Text(text, size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
-                    ft.Text(subtitle, size=13, color=ft.Colors.BLACK54)
-                ], alignment=ft.MainAxisAlignment.CENTER, spacing=0)
-            ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER),
-            padding=ft.padding.only(left=20),
             ink=True,
-            on_click=func_action
+            on_click=func_action,
+            animate_scale=ft.Animation(140, ft.AnimationCurve.EASE_OUT),
+            on_hover=_animate_hover,
+            content=glass_card(
+                width=380,
+                padding=18,
+                content=ft.Row([
+                    ft.Container(
+                        width=60,
+                        height=60,
+                        border_radius=20,
+                        bgcolor=ft.Colors.with_opacity(0.16, accent),
+                        alignment=ft.alignment.center,
+                        content=ft.Icon(icon_name, size=30, color=accent),
+                    ),
+                    ft.Container(width=16),
+                    ft.Column([
+                        ft.Text(text, size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                        ft.Text(subtitle, size=12, color=ft.Colors.WHITE70),
+                    ], spacing=4, expand=True),
+                    ft.Container(
+                        padding=ft.padding.symmetric(horizontal=14, vertical=10),
+                        border_radius=16,
+                        bgcolor=accent,
+                        content=ft.Row([
+                            ft.Text("Mở", size=13, weight=ft.FontWeight.BOLD, color="#06131B"),
+                            ft.Icon(ft.Icons.ARROW_FORWARD, size=16, color="#06131B"),
+                        ], spacing=6),
+                    ),
+                ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            ),
         )
 
     # --- 1. LỚP NỀN (BACKGROUND) - Tự động co giãn (Fit) ---
     background_layer = ft.Stack([
-        ft.Image(
-            src=bg_image_src,
-            width=float("inf"),
-            height=float("inf"),
-            fit=ft.ImageFit.COVER,
-            error_content=ft.Container(bgcolor=ft.Colors.BLUE_GREY_900),
-        ),
         ft.Container(
             expand=True,
-            bgcolor=ft.Colors.with_opacity(0.50, ft.Colors.BLUE_GREY_900)
-        )
+            blur=14,
+            content=ft.Image(
+                src=bg_image_src,
+                width=float("inf"),
+                height=float("inf"),
+                fit=ft.ImageFit.COVER,
+                error_content=ft.Container(bgcolor=ft.Colors.BLUE_GREY_900),
+            ),
+        ),
+        ft.Container(expand=True, bgcolor=ft.Colors.with_opacity(0.68, ft.Colors.BLACK))
     ])
 
-    # --- 2. LOGO ---
-    logo_layer = ft.Container(
-        content=ft.Image(
-            src=logo_src,
-            width=80, height=80,
-            fit=ft.ImageFit.CONTAIN,
-            error_content=ft.Icon(ft.Icons.ADMIN_PANEL_SETTINGS, color=ft.Colors.WHITE, size=60),
-        ),
-        top=10, right=10, padding=5
-    )
-
     # --- 3. THẺ ADMIN ---
-    admin_card = ft.Container(
-        width=320, height=100,
-        bgcolor="#CFD8DC",
-        border=ft.border.all(1, ft.Colors.BLUE_GREY_200),
-        border_radius=20,
-        padding=15,
-        shadow=ft.BoxShadow(blur_radius=5, color=ft.Colors.BLACK26, offset=ft.Offset(0, 2)),
+    admin_card = glass_card(
+        width=430,
+        padding=18,
         content=ft.Row([
             ft.Container(
-                width=70, height=70,
-                border_radius=35,
-                border=ft.border.all(2, ft.Colors.BLUE_GREY_700),
+                width=78, height=78,
+                border_radius=39,
+                border=ft.border.all(1.5, BORDER),
                 content=ft.CircleAvatar(
                     foreground_image_src=avatar_src,
-                    radius=33,
+                    radius=37,
                     bgcolor=ft.Colors.GREY_300
                 )
             ),
-            ft.Container(width=10),
+            ft.Container(width=14),
             ft.Column([
-                ft.Text("Hieu", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_GREY_900),
+                ft.Text("Nguyen Ngoc Hieu", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                 ft.Container(
                     padding=ft.padding.symmetric(horizontal=10, vertical=3),
-                    bgcolor="#4a6fa5",
+                    bgcolor=SECONDARY,
                     border_radius=15,
-                    content=ft.Text("Super Admin", size=12, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD)
+                    content=ft.Text("Administrator", size=12, color="#06131B", weight=ft.FontWeight.BOLD)
                 )
-            ], alignment=ft.MainAxisAlignment.CENTER, spacing=5)
+            ], alignment=ft.MainAxisAlignment.CENTER, spacing=6, expand=True)
         ])
     )
 
-    # --- 4. CÁC NÚT CHỨC NĂNG ---
-    btn_system = create_custom_button(
-        "Quản Lý Hệ Thống", 
-        "Tài xế, Thống kê, Báo cáo",
-        ft.Icons.DASHBOARD_CUSTOMIZE, 
-        "#4CAF50", 
-        handle_system_click
-    )
-    btn_settings = create_custom_button(
-        "Cài Đặt",
-        "Cấu hình Camera & Hệ thống", 
-        ft.Icons.SETTINGS, 
-        "#D68936", 
-        handle_settings_click
-    )
+    btn_system = create_action_button("Quản lý hệ thống", "Tài xế, thống kê, dữ liệu và báo cáo", ft.Icons.DASHBOARD_CUSTOMIZE_ROUNDED, "primary", handle_system_click)
+    btn_settings = create_action_button("Cài đặt nhanh", "Kiểm tra các công tắc cấu hình hệ thống", ft.Icons.SETTINGS_ROUNDED, "warning", handle_settings_click)
 
     # --- 5. FOOTER ---
-    logout_btn = ft.TextButton(
-        "Đăng xuất",
-        icon=ft.Icons.LOGOUT,
-        icon_color=ft.Colors.RED_300,
-        style=ft.ButtonStyle(color=ft.Colors.WHITE70),
-        on_click=handle_logout
-    )
+    logout_btn = create_action_button("Đăng xuất", "Quay lại màn hình đăng nhập quản trị", ft.Icons.LOGOUT_ROUNDED, "danger", handle_logout)
     footer_text = ft.Text("© 2026 Admin System v1.0.0", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE54)
 
-    # --- 6. BỐ CỤC CHÍNH (QUAN TRỌNG NHẤT) ---
-    main_column = ft.Column(
-        [
-            ft.Container(height=60),
+    launcher_panel = glass_card(
+        width=560,
+        padding=28,
+        content=ft.Column([
+            ft.Row([
+                icon_button(ft.Icons.ARROW_BACK, on_click=lambda e: handle_logout(e), kind="surface", tooltip="Quay lại"),
+                ft.Container(expand=True),
+                ft.Image(
+                    src=logo_src,
+                    width=58,
+                    height=58,
+                    fit=ft.ImageFit.CONTAIN,
+                    error_content=ft.Icon(ft.Icons.ADMIN_PANEL_SETTINGS, color=ft.Colors.WHITE70, size=42),
+                ),
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Container(height=6),
+            ft.Text("Trung tâm điều phối admin", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+            ft.Text("Launcher được đồng bộ với giao diện phiên admin và user: tối, kính mờ, thông tin rõ ràng.", size=13, color=ft.Colors.WHITE70),
+            ft.Container(height=18),
             admin_card,
-            ft.Container(height=30),
+            ft.Container(height=18),
             btn_system,
-            ft.Container(height=15),
+            ft.Container(height=14),
             btn_settings,
-            ft.Container(height=40),
+            ft.Container(height=14),
             logout_btn,
-            footer_text,
-            ft.Container(height=20),
-        ],
-        alignment=ft.MainAxisAlignment.START,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        scroll=ft.ScrollMode.AUTO,
+            ft.Container(height=10),
+            ft.Container(content=footer_text, alignment=ft.alignment.center_right),
+        ], scroll=ft.ScrollMode.AUTO),
     )
 
-    # Ghép layout
     layout = ft.Stack(
         [
             background_layer,
             ft.Container(
-                content=main_column, 
+                content=launcher_panel, 
                 alignment=ft.alignment.center,
                 width=float("inf"),
+                padding=24,
             ),
-            logo_layer,
         ],
         expand=True
     )

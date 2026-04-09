@@ -1,656 +1,486 @@
-"""
-ArcFace Face Recognition System
-================================
-YOLOv8 + InsightFace (ArcFace) + AES-256 Encryption + Cosine Similarity
-
-Tác giả: AI Assistant
-Ngày: 2026-02-02
-"""
 
 import cv2
 import numpy as np
+import os
 import json
 import base64
+from typing import Optional, Tuple, Dict, Any
 from pathlib import Path
-from typing import Dict, Tuple, Optional, List
-from datetime import datetime
-import sys
-import os
+from .base_face_model import BaseFaceModel
 
-# Context manager để tắt output (bao gồm cả C++ output nếu có thể)
-class SuppressOutput:
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
-        sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
+# Import InsightFace
+try:
+    from insightface.app import FaceAnalysis as _FaceAnalysis
+    HAS_INSIGHTFACE = True
+except ImportError:
+    HAS_INSIGHTFACE = False
+    print("⚠️ [IMPORT] insightface not found. Face recognition will use fallback!")
+
+# Load Haar Cascade một lần duy nhất
+_FACE_CASCADE = cv2.CascadeClassifier(
+    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+)
+
+def crop_face_from_image(img: np.ndarray, padding: float = 0.2) -> Optional[np.ndarray]:
+    """
+    Phát hiện và crop khuôn mặt từ ảnh.
+    Nếu không tìm thấy mặt → trả về None.
+    Sử dụng multiple attempts với parameters khác nhau.
+    """
+    # PREPROCESSING: Cải thiện contrast/brightness để detection tốt hơn
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()
-        sys.stderr.close()
-        sys.stdout = self._original_stdout
-        sys.stderr = self._original_stderr
-
-# Cryptography
-from Crypto.Cipher import AES
-from Crypto.Protocol.KDF import PBKDF2
-from Crypto.Random import get_random_bytes
-
-# ========== SILENT MODE - TẮT TẤT CẢ LOG ==========
-SILENT_MODE = False  # Set to False để bật lại logging
-
-def log_print(*args, **kwargs):
-    """Print wrapper - chỉ print khi SILENT_MODE = False"""
-    if not SILENT_MODE:
-        print(*args, **kwargs)
-# ==================================================
-
-# ML/AI
-# Global placeholders for Lazy Loading
-YOLO = None
-FaceAnalysis = None
-cosine_similarity = None
-HAS_MODELS = False
-AI_LIBS_LOADED = False
-
-def _load_ai_libs():
-    """Lazy load heavy AI libraries"""
-    global YOLO, FaceAnalysis, cosine_similarity, HAS_MODELS, AI_LIBS_LOADED
+    # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) để tăng contrast
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    gray = clahe.apply(gray)
     
-    if AI_LIBS_LOADED:
-        return
-
-    log_print("⏳ [SYSTEM] Loading AI libraries (Lazy Import)...")
-    try:
-        from ultralytics import YOLO as _YOLO
-        import insightface
-        from insightface.app import FaceAnalysis as _FaceAnalysis
-        from sklearn.metrics.pairwise import cosine_similarity as _cosine_similarity
-        
-        # Suppress ONNX Runtime warnings
-        try:
-            import onnxruntime
-            onnxruntime.set_default_logger_severity(3)
-        except:
-            pass
-            
-        YOLO = _YOLO
-        FaceAnalysis = _FaceAnalysis
-        cosine_similarity = _cosine_similarity
-        HAS_MODELS = True
-        AI_LIBS_LOADED = True
-        log_print("✅ [SYSTEM] AI libraries loaded successfully")
-    except ImportError as e:
-        import traceback
-        traceback.print_exc()
-        HAS_MODELS = False
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        HAS_MODELS = False
-
-# Base interface
-from src.BUS.ai_core.login_user.base_face_model import BaseFaceModel
-
-
-# ============================================================================
-# 1. YOLOV8 FACE DETECTOR
-# ============================================================================
-
-class YOLOv8FaceDetector:
-    """Phát hiện khuôn mặt bằng YOLOv8"""
+    # ATTEMPT 1: Chặt (minNeighbors=3) - Để phát hiện các khuôn mặt rõ ràng
+    faces = _FACE_CASCADE.detectMultiScale(
+        gray,
+        scaleFactor=1.1,
+        minNeighbors=3,
+        minSize=(40, 40)
+    )
     
-    def __init__(self, confidence_threshold: float = 0.75, min_face_size: int = 40):
-        """
-        Args:
-            confidence_threshold: Ngưỡng độ tin cậy (0.0-1.0)
-            min_face_size: Kích thước khuôn mặt tối thiểu (pixels)
-        """
-        # Ensure libs are loaded
-        _load_ai_libs()
-        
-        self.confidence_threshold = confidence_threshold
-        self.min_face_size = min_face_size
-        
-        # Load YOLOv8 model (sử dụng pretrained hoặc custom)
-        # Note: Có thể cần model custom trained cho face detection
-        try:
-            self.model = YOLO('yolov8n.pt')  # YOLOv8 nano
-            log_print(f"✅ [YOLOv8] Model loaded successfully")
-        except Exception as e:
-            pass
-            self.model = None
+    print(f"🔍 [CROP_DEBUG] ATTEMPT 1 (minNeighbors=3, minSize=40): Found {len(faces)} faces")
     
-    def detect_faces(self, image: np.ndarray) -> List[Dict]:
-        """
-        Phát hiện khuôn mặt trong ảnh
-        
-        Args:
-            image: Ảnh đầu vào (BGR format)
-            
-        Returns:
-            List[Dict]: [{'bbox': [x, y, w, h], 'confidence': float}]
-        """
-        if self.model is None:
-            pass
-            return []
-        
-        try:
-            results = self.model(image, conf=self.confidence_threshold, verbose=False)
-            faces = []
-            
-            for result in results:
-                boxes = result.boxes
-                for box in boxes:
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                    conf = float(box.conf[0])
-                    w, h = x2 - x1, y2 - y1
-                    
-                    # Kiểm tra kích thước tối thiểu
-                    if w >= self.min_face_size and h >= self.min_face_size:
-                        faces.append({
-                            'bbox': [int(x1), int(y1), int(w), int(h)],
-                            'confidence': conf
-                        })
-            
-            # Log only if faces found (reduce spam)
-            if len(faces) > 0:
-                pass
-            return faces
-            
-        except Exception as e:
-            pass
-            return []
+    # ATTEMPT 2: Nếu không tìm được, thử lỏng hơn (minNeighbors=2)
+    if len(faces) == 0:
+        print("⚠️ [CROP] minNeighbors=3 không phát hiện, thử minNeighbors=2...")
+        faces = _FACE_CASCADE.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=2,
+            minSize=(30, 30)
+        )
+        print(f"🔍 [CROP_DEBUG] ATTEMPT 2 (minNeighbors=2, minSize=30): Found {len(faces)} faces")
     
-    def crop_face(self, image: np.ndarray, bbox: List[int]) -> np.ndarray:
-        """
-        Cắt khuôn mặt từ ảnh
-        
-        Args:
-            image: Ảnh gốc
-            bbox: [x, y, w, h]
-            
-        Returns:
-            Ảnh khuôn mặt đã cắt
-        """
-        x, y, w, h = bbox
-        return image[y:y+h, x:x+w]
+    # ATTEMPT 3: Vẫn không tìm được, thử rất lỏng (minNeighbors=1)
+    if len(faces) == 0:
+        print("⚠️ [CROP] minNeighbors=2 không phát hiện, thử minNeighbors=1...")
+        faces = _FACE_CASCADE.detectMultiScale(
+            gray,
+            scaleFactor=1.05,
+            minNeighbors=1,
+            minSize=(20, 20)
+        )
+        print(f"🔍 [CROP_DEBUG] ATTEMPT 3 (minNeighbors=1, minSize=20): Found {len(faces)} faces")
+    
+    # ATTEMPT 4: Cuối cùng, thử với scale factor nhỏ hơn
+    if len(faces) == 0:
+        print("⚠️ [CROP] Tất cả attempts thất bại, thử scale factor 1.02...")
+        faces = _FACE_CASCADE.detectMultiScale(
+            gray,
+            scaleFactor=1.02,
+            minNeighbors=1,
+            minSize=(15, 15)
+        )
+        print(f"🔍 [CROP_DEBUG] ATTEMPT 4 (scaleFactor=1.02): Found {len(faces)} faces")
+    
+    if len(faces) == 0:
+        print("⚠️ [CROP] Không phát hiện khuôn mặt trong ảnh sau 4 lần thử")
+        print(f"   ├─ Input image shape: {img.shape}")
+        print(f"   └─ Gray image stats: min={gray.min()}, max={gray.max()}, mean={gray.mean():.1f}")
+        return None
 
+    # Lấy khuôn mặt lớn nhất
+    (x, y, w, h) = max(faces, key=lambda f: f[2] * f[3])
+    h_img, w_img = img.shape[:2]
 
-# ============================================================================
-# 2. ARCFACE EMBEDDING EXTRACTOR
-# ============================================================================
+    # IMPROVE: Consistent padding - không quá lớn để tránh background noise
+    # Reduce padding từ 0.2 → 0.15 để focus hơn vào mặt
+    padding = 0.15
+    pad_x = int(w * padding)
+    pad_y = int(h * padding)
+    x1 = max(0, x - pad_x)
+    y1 = max(0, y - pad_y)
+    x2 = min(w_img, x + w + pad_x)
+    y2 = min(h_img, y + h + pad_y)
+
+    face_crop = img[y1:y2, x1:x2]
+    
+    # IMPROVE: Resize to fixed size (128x128) để consistency
+    # Nếu crop size khác nhau → embedding khác
+    # Normalize size → embeddings consistent hơn
+    face_crop_normalized = cv2.resize(face_crop, (128, 128))
+    
+    print(f"✅ [CROP] Đã crop khuôn mặt: ({x1},{y1})-({x2},{y2}), size={face_crop.shape}")
+    print(f"   └─ Normalized to (128, 128)")
+    return face_crop_normalized
+
 
 class ArcFaceEmbedding:
-    """Trích xuất embedding 512D bằng InsightFace ArcFace"""
+    """Trích xuất embedding 512D bằng InsightFace API"""
     
-    def __init__(self):
-        """Khởi tạo ArcFace model"""
-        # Ensure libs are loaded
-        _load_ai_libs()
+    def __init__(self, model_name: str = 'buffalo_sc'):
+        """Khởi tạo InsightFace model"""
+        self.app = None
+        self.use_insightface = False
+        
+        if HAS_INSIGHTFACE:
+            try:
+                # Không dùng allowed_modules=['recognition'] vì sẽ bỏ qua detection
+                # → app.prepare(det_size=...) sẽ ném AttributeError (message rỗng)
+                # → app.get() không tìm được embedding
+                self.app = _FaceAnalysis(
+                    name=model_name,
+                    providers=['CPUExecutionProvider']
+                )
+                # det_size=(640,640) để detection hoạt động đúng
+                self.app.prepare(ctx_id=0, det_size=(640, 640))
+                self.use_insightface = True
+                print(f"✅ [InsightFace] Model '{model_name}' loaded successfully")
+            except Exception as e:
+                print(f"⚠️ [InsightFace] Load failed: {type(e).__name__}: {e}, using fallback")
+        else:
+            print("⚠️ [InsightFace] Library not available, using fallback")
 
-        if not HAS_MODELS or FaceAnalysis is None:
-            log_print("❌ [InsightFace] Libraries not installed or import failed")
-            self.app = None
-            return
-            
-        try:
-            # Revert SuppressOutput as it breaks InsightFace logic
-            self.app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
-            self.app.prepare(ctx_id=0, det_size=(640, 640))
-            log_print("✅ [InsightFace] Model ArcFace embedding đã khởi tạo")
-        except Exception as e:
-            print(f"❌ [InsightFace] Init failed: {e}")
-            self.app = None
-    
-    def extract_embedding(self, face_image: np.ndarray) -> Optional[np.ndarray]:
+    def extract_embedding_simple(self, face_image: np.ndarray) -> np.ndarray:
         """
-        Trích xuất embedding 512D
-        
-        Args:
-            face_image: Ảnh khuôn mặt (BGR)
-            
-        Returns:
-            np.ndarray(512,) hoặc None nếu thất bại
+        Fallback: Extract discriminative embedding từ face image
+        ENHANCED: Local patches + Texture + Multi-scale features
         """
-        if self.app is None:
-            pass
-            return None
-        
         try:
-            # InsightFace cần RGB
-            face_rgb = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
-            faces = self.app.get(face_rgb)
+            # Convert to grayscale
+            if len(face_image.shape) == 3:
+                gray = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY)
+            else:
+                gray = face_image
             
-            if len(faces) == 0:
-                print(f"⚠️ [InsightFace] Không tìm thấy khuôn mặt trong crop image (Shape: {face_rgb.shape})")
-                return None
+            # Ensure size
+            gray = cv2.resize(gray, (128, 128))
             
-            # Lấy embedding của khuôn mặt đầu tiên
-            embedding = faces[0].embedding
-            # Normalize embedding
-            embedding = embedding / np.linalg.norm(embedding)
+            features = []
             
-            # Removed log to reduce spam
+            # ========== FEATURE SET 1: MULTI-SCALE PYRAMIDS ==========
+            # Scale pyramid: 32, 48, 64, 128 để capture multi-level info
+            for size in [32, 48, 64, 128]:
+                resized = cv2.resize(gray, (size, size))
+                features.append(resized.flatten().astype(np.float32))
+            
+            # ========== FEATURE SET 2: HISTOGRAMS ==========
+            for size in [32, 64, 128]:
+                resized = cv2.resize(gray, (size, size))
+                hist = cv2.calcHist([resized], [0], None, [64], [0, 256]).flatten().astype(np.float32)
+                features.append(hist)
+            
+            # ========== FEATURE SET 3: EDGE MAPS ==========
+            # Sobel edges (high discriminative power for facial features)
+            for ksize in [3, 5]:
+                sobel_x = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=ksize)
+                sobel_y = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=ksize)
+                sobel_mag = np.sqrt(sobel_x**2 + sobel_y**2 + 1e-6)
+                sobel_resized = cv2.resize(sobel_mag, (32, 32)).flatten().astype(np.float32)
+                features.append(sobel_resized)
+            
+            # ========== FEATURE SET 4: LOCAL BINARY PATTERNS (LBP-like) ==========
+            # Simple LBP: compare each pixel with neighbors
+            h, w = gray.shape
+            lbp = np.zeros((h-2, w-2), dtype=np.uint8)
+            for i in range(1, h-1):
+                for j in range(1, w-1):
+                    center = gray[i, j]
+                    neighbors = [
+                        gray[i-1, j-1], gray[i-1, j], gray[i-1, j+1],
+                        gray[i, j-1],               gray[i, j+1],
+                        gray[i+1, j-1], gray[i+1, j], gray[i+1, j+1]
+                    ]
+                    lbp_code = 0
+                    for k, neighbor in enumerate(neighbors):
+                        if neighbor >= center:
+                            lbp_code |= (1 << k)
+                    lbp[i-1, j-1] = lbp_code
+            
+            lbp_hist = cv2.calcHist([lbp], [0], None, [256], [0, 256]).flatten().astype(np.float32)
+            features.append(lbp_hist)
+            
+            # ========== FEATURE SET 5: LAPLACIAN (curvature) ==========
+            laplacian = cv2.Laplacian(gray, cv2.CV_32F)
+            lap_resized = cv2.resize(laplacian, (32, 32)).flatten().astype(np.float32)
+            features.append(lap_resized)
+            
+            # ========== FEATURE SET 6: LOCAL PATCHES ==========
+            # Divide image into 4x4 grid and extract stats from each patch
+            patch_size = 32  # 128/4 = 32
+            patches = []
+            for i in range(0, 128, patch_size):
+                for j in range(0, 128, patch_size):
+                    patch = gray[i:i+patch_size, j:j+patch_size]
+                    patches.extend([
+                        patch.mean(),
+                        patch.std() + 1e-6,
+                        np.percentile(patch, 25),
+                        np.percentile(patch, 75)
+                    ])
+            features.append(np.array(patches, dtype=np.float32))
+            
+            # Combine all features
+            embedding = np.concatenate(features)
+            
+            # Truncate/pad to exactly 512D
+            if len(embedding) > 512:
+                # Keep most diverse features (pyramid + edges + patches)
+                embedding = embedding[:512]
+            elif len(embedding) < 512:
+                # Pad with mean value
+                pad_size = 512 - len(embedding)
+                pad_val = np.full(pad_size, gray.mean() / 255.0, dtype=np.float32)
+                embedding = np.concatenate([embedding, pad_val])
+            
+            # L2 normalize for cosine similarity
+            norm = np.linalg.norm(embedding)
+            if norm > 1e-6:
+                embedding = embedding / norm
+            
             return embedding
             
         except Exception as e:
-            pass
+            print(f"❌ [SIMPLE] Enhanced embedding failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return np.zeros(512, dtype=np.float32)
+
+    def _extract_from_full_image(self, img: np.ndarray) -> Optional[np.ndarray]:
+        """Truyền ảnh GỐC (full frame) vào InsightFace để tự detect + extract embedding.
+        Trả về embedding 512D đã normalize, hoặc None nếu không tìm thấy mặt."""
+        if not (self.use_insightface and self.app is not None):
             return None
-    
+        try:
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            faces = self.app.get(img_rgb)
+            if faces:
+                emb = faces[0].embedding.astype(np.float32)
+                norm = np.linalg.norm(emb)
+                if norm > 1e-6:
+                    emb = emb / norm
+                return emb
+            else:
+                print("⚠️ [InsightFace] Không phát hiện mặt trong ảnh gốc, dùng fallback")
+                return None
+        except Exception as e:
+            print(f"⚠️ [InsightFace] Inference failed: {type(e).__name__}: {e}, dùng fallback")
+            return None
+
+    def extract_embedding(self, face_image: np.ndarray) -> Optional[np.ndarray]:
+        """Trích xuất embedding 512D từ face crop (fallback path).
+        Chỉ dùng khi _extract_from_full_image() đã thất bại."""
+        return self.extract_embedding_simple(face_image)
+
     def compare_embeddings(self, emb1: np.ndarray, emb2: np.ndarray) -> float:
-        """
-        So sánh 2 embeddings bằng cosine similarity
-        
-        Args:
-            emb1, emb2: Embeddings 512D
-            
-        Returns:
-            float: Độ tương đồng (0.0-1.0)
-        """
-        similarity = cosine_similarity([emb1], [emb2])[0][0]
-        pass
-        return float(similarity)
+        """So sánh Cosine Similarity"""
+        if emb1 is None or emb2 is None: return 0.0
+        dot_product = np.dot(emb1.flatten(), emb2.flatten())
+        norm_a = np.linalg.norm(emb1)
+        norm_b = np.linalg.norm(emb2)
+        if norm_a < 1e-6 or norm_b < 1e-6: return 0.0
+        return float(dot_product / (norm_a * norm_b))
 
-
-# ============================================================================
-# 3. FACE ENCRYPTION (AES-256)
-# ============================================================================
-
-class FaceEncryption:
-    """Mã hóa/giải mã ảnh khuôn mặt bằng AES-256"""
-    
-    def __init__(self):
-        self.key_length = 32  # AES-256
-        self.salt_length = 16
-        self.iterations = 100000  # PBKDF2 iterations
-    
-    def encrypt_image(self, image: np.ndarray, password: str) -> Dict:
-        """
-        Mã hóa ảnh khuôn mặt
-        
-        Args:
-            image: Ảnh (numpy array)
-            password: Mật khẩu user
-            
-        Returns:
-            Dict: {
-                'encrypted_data': str (Base64),
-                'salt': str (Base64),
-                'iv': str (Base64),
-                'shape': tuple
-            }
-        """
-        try:
-            # Serialize ảnh
-            image_bytes = image.tobytes()
-            
-            # Tạo salt và derive key
-            salt = get_random_bytes(self.salt_length)
-            key = PBKDF2(password, salt, dkLen=self.key_length, count=self.iterations)
-            
-            # Tạo IV và cipher
-            iv = get_random_bytes(AES.block_size)
-            cipher = AES.new(key, AES.MODE_CBC, iv)
-            
-            # Padding
-            pad_length = AES.block_size - len(image_bytes) % AES.block_size
-            padded_data = image_bytes + bytes([pad_length] * pad_length)
-            
-            # Mã hóa
-            encrypted = cipher.encrypt(padded_data)
-            
-            result = {
-                'encrypted_data': base64.b64encode(encrypted).decode('utf-8'),
-                'salt': base64.b64encode(salt).decode('utf-8'),
-                'iv': base64.b64encode(iv).decode('utf-8'),
-                'shape': image.shape
-            }
-            
-            return result
-            
-        except Exception as e:
-            pass
-            return None
-    
-    def decrypt_image(self, encrypted_data: str, salt: str, iv: str, 
-                     shape: tuple, password: str) -> Optional[np.ndarray]:
-        """
-        Giải mã ảnh khuôn mặt
-        
-        Args:
-            encrypted_data: Dữ liệu mã hóa (Base64)
-            salt: Salt (Base64)
-            iv: IV (Base64)
-            shape: Kích thước ảnh gốc
-            password: Mật khẩu user
-            
-        Returns:
-            np.ndarray: Ảnh đã giải mã hoặc None nếu sai password
-        """
-        try:
-            # Decode Base64
-            encrypted_bytes = base64.b64decode(encrypted_data)
-            salt_bytes = base64.b64decode(salt)
-            iv_bytes = base64.b64decode(iv)
-            
-            # Derive key
-            key = PBKDF2(password, salt_bytes, dkLen=self.key_length, count=self.iterations)
-            
-            # Decrypt
-            cipher = AES.new(key, AES.MODE_CBC, iv_bytes)
-            decrypted = cipher.decrypt(encrypted_bytes)
-            
-            # Remove padding
-            pad_length = decrypted[-1]
-            unpadded = decrypted[:-pad_length]
-            
-            # Reshape
-            image = np.frombuffer(unpadded, dtype=np.uint8).reshape(shape)
-            
-            pass
-            return image
-            
-        except Exception as e:
-            pass
-            return None
-
-
-# ============================================================================
-# 4. MAIN ARCFACE MODEL
-# ============================================================================
 
 class ArcFaceModel(BaseFaceModel):
-    """
-    Hệ thống nhận diện khuôn mặt hoàn chỉnh
-    YOLOv8 → ArcFace → AES → Cosine Similarity
-    """
+    """Lớp bọc chính cho hệ thống - Kết hợp AI và quản lý dữ liệu JSON"""
     
-    def __init__(self, config: Dict):
-        """
-        Args:
-            config: {
-                'confidence_threshold': float,
-                'min_face_size': int,
-                'cosine_threshold': float
+    def __init__(self, config: Dict = None):
+        if config is None:
+            config = {
+                'confidence_threshold': 0.55,
+                'min_face_size': 30,
+                'cosine_threshold': 0.55
             }
-        """
         super().__init__(config)
+        _insightface_model_name = config.get('model_name', 'buffalo_sc') if config else 'buffalo_sc'
+        # normalize legacy value
+        if _insightface_model_name not in ('buffalo_sc', 'buffalo_l', 'buffalo_s'):
+            _insightface_model_name = 'buffalo_sc'
+        self.arcface = ArcFaceEmbedding(model_name=_insightface_model_name)
         
-        # Khởi tạo các components
-        self.yolo = YOLOv8FaceDetector(
-            self.confidence_threshold, 
-            self.min_face_size
-        )
-        self.arcface = ArcFaceEmbedding()
-        self.encryption = FaceEncryption()
+        # Load YOLO face detector từ config model_path nếu có
+        self.yolo_detector = None
+        _model_path = config.get('model_path', '') if config else ''
+        if _model_path and os.path.exists(_model_path) and _model_path.endswith('.pt'):
+            try:
+                from ultralytics import YOLO
+                self.yolo_detector = YOLO(_model_path)
+                print(f"✅ [ArcFaceModel] YOLO face detector loaded: {os.path.basename(_model_path)}")
+            except Exception as _e:
+                print(f"⚠️ [ArcFaceModel] Không load được YOLO model: {_e}")
+                self.yolo_detector = None
+
+        print(f"🤖 [ArcFaceModel] AI Engine ready. Threshold: {self.cosine_threshold}")
+
+    def _crop_face_yolo(self, img: np.ndarray) -> Optional[np.ndarray]:
+        """Dùng YOLO để detect và crop khuôn mặt (thay thế Haar cascade)"""
+        try:
+            results = self.yolo_detector(img, verbose=False, conf=0.25)
+            best_box = None
+            best_area = 0
+            for r in results:
+                for box in r.boxes:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+                    area = (x2 - x1) * (y2 - y1)
+                    if area > best_area:
+                        best_area = area
+                        best_box = (x1, y1, x2, y2)
+            if best_box:
+                x1, y1, x2, y2 = best_box
+                h_img, w_img = img.shape[:2]
+                # Thêm padding nhỏ
+                pad = int(min(x2-x1, y2-y1) * 0.1)
+                x1, y1 = max(0, x1-pad), max(0, y1-pad)
+                x2, y2 = min(w_img, x2+pad), min(h_img, y2+pad)
+                face_crop = img[y1:y2, x1:x2]
+                face_crop = cv2.resize(face_crop, (128, 128))
+                print(f"✅ [YOLO_DETECT] Crop khuôn mặt: ({x1},{y1})-({x2},{y2})")
+                return face_crop
+            else:
+                print("⚠️ [YOLO_DETECT] Không tìm thấy khuôn mặt")
+                return None
+        except Exception as e:
+            print(f"❌ [YOLO_DETECT] Lỗi: {e}")
+            return None
+
+    def extract_embedding(self, image_path: str) -> Optional[np.ndarray]:
+        """Trích xuất embedding từ file ảnh.
+        Ưu tiên InsightFace trên ảnh gốc, fallback sang YOLO crop + histogram."""
+        if not os.path.exists(image_path):
+            print(f"❌ [AI] File not found: {image_path}")
+            return None
         
-        # Database path
-        self.accounts_file = Path("src/GUI/data/accounts.json")
+        img = cv2.imread(image_path)
+        if img is None:
+            print(f"❌ [AI] Cannot read image: {image_path}")
+            return None
         
-        log_print("✅ [SYSTEM] Face Recognition System fully initialized")
-    
+        # 1. Ưu tiên: InsightFace nhận ảnh GỐC (tự detect + embed)
+        emb = self.arcface._extract_from_full_image(img)
+        if emb is not None:
+            return emb
+        
+        # 2. Fallback: YOLO crop → histogram embedding
+        if self.yolo_detector is not None:
+            face_img = self._crop_face_yolo(img)
+        else:
+            face_img = crop_face_from_image(img)
+        if face_img is None:
+            print("⚠️ [EXTRACT] Crop failed, dùng full frame")
+            face_img = cv2.resize(img, (224, 224))
+        return self.arcface.extract_embedding(face_img)
+
+    def extract_embedding_from_frame(self, frame: np.ndarray) -> Optional[np.ndarray]:
+        """Trích xuất embedding trực tiếp từ frame camera.
+        Ưu tiên InsightFace trên frame gốc, fallback sang Haar crop + histogram."""
+        if frame is None or frame.size == 0:
+            return None
+        
+        # 1. Ưu tiên: InsightFace nhận frame GỐC
+        emb = self.arcface._extract_from_full_image(frame)
+        if emb is not None:
+            return emb
+        
+        # 2. Fallback: Haar crop → histogram embedding
+        face_img = crop_face_from_image(frame)
+        if face_img is None:
+            print("❌ [AI] Không tìm thấy khuôn mặt trong frame")
+            return None
+        return self.arcface.extract_embedding(face_img)
+
     def register_face(self, image_path: str, user_data: Dict) -> bool:
         """
-        Đăng ký khuôn mặt mới
-        
-        Luồng: Load Image → YOLO Detect → Crop → ArcFace Extract → AES Encrypt → Save JSON
-        
-        Args:
-            image_path: Đường dẫn ảnh khuôn mặt
-            user_data: {'username', 'password', 'name', etc.}
-            
-        Returns:
-            bool: Thành công hay không
+        Đăng ký khuôn mặt theo DB, sau đó đồng bộ lại accounts.json.
         """
-        pass
-        
-        try:
-            # 1. Load image
-            image = cv2.imread(image_path)
-            if image is None:
-                pass
-                return False
-            
-            # 2. Detect face
-            faces = self.yolo.detect_faces(image)
-            if len(faces) == 0:
-                pass
-                return False
-            
-            # Lấy khuôn mặt lớn nhất
-            face_data = max(faces, key=lambda f: f['bbox'][2] * f['bbox'][3])
-            face_crop = self.yolo.crop_face(image, face_data['bbox'])
-            
-            # 3. Extract embedding
-            embedding = self.arcface.extract_embedding(face_crop)
-            if embedding is None:
-                pass
-                return False
-            
-            # 4. Encrypt face image
-            encrypted = self.encryption.encrypt_image(face_crop, user_data['password'])
-            if encrypted is None:
-                pass
-                return False
-            
-            # 5. Encrypt embedding
-            emb_bytes = embedding.tobytes()
-            emb_encrypted = self.encryption.encrypt_image(
-                np.frombuffer(emb_bytes, dtype=np.uint8).reshape(-1),
-                user_data['password']
-            )
-            
-            # 6. Save to JSON
-            face_entry = {
-                'encrypted_image': encrypted['encrypted_data'],
-                'salt': encrypted['salt'],
-                'iv': encrypted['iv'],
-                'shape': encrypted['shape'],
-                'embedding_encrypted': emb_encrypted['encrypted_data'],
-                'embedding_salt': emb_encrypted['salt'],
-                'embedding_iv': emb_encrypted['iv'],
-                'registered_at': datetime.now().isoformat(),
-                'model': 'ArcFace'
-            }
-            
-            # Add to user_data
-            user_data['face_data'] = face_entry
-            
-            # Save to accounts.json
-            if self._save_user_account(user_data):
-                pass
-                return True
-            else:
-                pass
-                return False
-                
-        except Exception as e:
-            pass
+        embedding = self.extract_embedding(image_path)
+        if embedding is None:
+            print(f"❌ [REGISTER] Không thể trích xuất embedding từ ảnh: {image_path}")
             return False
-    
-    def verify_face(self, image_path: str, username: str, password: str) -> Tuple[bool, float]:
-        """
-        Xác thực khuôn mặt
-        
-        Luồng: Load Image → YOLO → ArcFace → Load Encrypted Embedding → 
-               Decrypt → Cosine Similarity → Match?
-        
-        Args:
-            image_path: Ảnh hiện tại
-            username: Tên đăng nhập
-            password: Mật khẩu
+
+        try:
+            emb_bytes = embedding.astype(np.float32).tobytes()
+            emb_base64 = base64.b64encode(emb_bytes).decode('utf-8')
+            username = user_data.get('username')
+            from src.DAL import (
+                cap_nhat_tai_xe,
+                export_accounts_to_json,
+                get_driver_account_from_db,
+                them_tai_xe,
+            )
+
+            existing_user = get_driver_account_from_db(username)
+            if existing_user:
+                cap_nhat_tai_xe(
+                    username,
+                    name=user_data.get('name'),
+                    password=user_data.get('password'),
+                    phone=user_data.get('phone'),
+                    face_data=emb_base64,
+                    goi_dich_vu=user_data.get('goi_dich_vu', 'Free'),
+                )
+            else:
+                them_tai_xe(
+                    user_data.get('driver_id', ''),
+                    username,
+                    user_data.get('name', username),
+                    user_data.get('password', ''),
+                    user_data.get('phone'),
+                    emb_base64,
+                    user_data.get('goi_dich_vu', 'Free'),
+                )
+
+            export_accounts_to_json()
             
-        Returns:
-            (matched, similarity_score)
+            print(f"✅ [REGISTER] Successfully registered face for {username}")
+            return True
+
+        except Exception as e:
+            print(f"❌ [REGISTER] Error: {e}")
+            return False
+
+    def verify_face(self, image_path: str, username: str, password: str = "") -> Tuple[bool, float]:
         """
-        pass
+        Xác thực khuôn mặt với dữ liệu đã lưu trong DB.
+        """
+        current_embedding = self.extract_embedding(image_path)
+        if current_embedding is None:
+            print(f"❌ [VERIFY] Could not extract embedding from {image_path}")
+            return False, 0.0
         
         try:
-            # 1. Load image
-            image = cv2.imread(image_path)
-            if image is None:
-                pass
+            from src.DAL import get_driver_account_from_db
+
+            account = get_driver_account_from_db(username)
+            emb_base64 = account.get('face_data') if account else None
+            if not emb_base64:
+                print(f"⚠️ [VERIFY] No face data found for user {username}")
                 return False, 0.0
-            
-            # 2. Detect and extract embedding from current image
-            faces = self.yolo.detect_faces(image)
-            if len(faces) == 0:
-                pass
-                return False, 0.0
-            
-            face_crop = self.yolo.crop_face(image, faces[0]['bbox'])
-            current_embedding = self.arcface.extract_embedding(face_crop)
-            
-            if current_embedding is None:
-                pass
-                return False, 0.0
-            
-            # 3. Load user data from JSON
-            user_data = self._load_user_account(username)
-            if user_data is None or 'face_data' not in user_data:
-                pass
-                return False, 0.0
-            
-            face_data = user_data['face_data']
-            
-            # 4. Decrypt stored embedding
-            emb_encrypted_bytes = base64.b64decode(face_data['embedding_encrypted'])
-            emb_salt = face_data['embedding_salt']
-            emb_iv = face_data['embedding_iv']
-            
-            # Tạo shape cho embedding (512 floats = 2048 bytes)
-            emb_shape = (2048,)
-            
-            emb_decrypted = self.encryption.decrypt_image(
-                face_data['embedding_encrypted'],
-                emb_salt,
-                emb_iv,
-                emb_shape,
-                password
-            )
-            
-            if emb_decrypted is None:
-                pass
-                return False, 0.0
-            
-            # Convert back to float32 embedding
-            stored_embedding = np.frombuffer(emb_decrypted.tobytes(), dtype=np.float32)
-            
-            # 5. Compare embeddings
+
+            emb_bytes = base64.b64decode(emb_base64)
+            stored_embedding = np.frombuffer(emb_bytes, dtype=np.float32)
+
             similarity = self.arcface.compare_embeddings(current_embedding, stored_embedding)
-            
-            # 6. Check threshold
             matched = similarity >= self.cosine_threshold
             
-            if matched:
-                pass
-            else:
-                pass
+            status = "✅ MATCH" if matched else "❌ NO MATCH"
+            print(f"    {status} | {username}: {similarity:.4f} (threshold: {self.cosine_threshold:.4f})")
             
-            return matched, similarity
-            
+            return matched, float(similarity)
+
         except Exception as e:
-            pass
+            print(f"❌ [VERIFY] Error: {e}")
+            import traceback
+            traceback.print_exc()
             return False, 0.0
-    
-    def extract_embedding(self, image_path: str) -> Optional[np.ndarray]:
-        """
-        Trích xuất embedding từ ảnh
-        
-        Args:
-            image_path: Đường dẫn ảnh
-            
-        Returns:
-            Embedding 512D hoặc None
-        """
+
+    def verify_face_from_data(self, image_path: str, face_data_b64: str) -> Tuple[bool, float]:
+        """So sánh khuôn mặt với embedding đã lưu (chuỗi base64, lấy từ DB hoặc JSON phẳng)."""
+        current_embedding = self.extract_embedding(image_path)
+        if current_embedding is None:
+            return False, 0.0
         try:
-            image = cv2.imread(image_path)
-            if image is None:
-                return None
-            
-            faces = self.yolo.detect_faces(image)
-            if len(faces) == 0:
-                return None
-            
-            face_crop = self.yolo.crop_face(image, faces[0]['bbox'])
-            return self.arcface.extract_embedding(face_crop)
-            
+            emb_bytes = base64.b64decode(face_data_b64)
+            stored_embedding = np.frombuffer(emb_bytes, dtype=np.float32)
+            similarity = self.arcface.compare_embeddings(current_embedding, stored_embedding)
+            matched = similarity >= self.cosine_threshold
+            status = "✅ MATCH" if matched else "❌ NO MATCH"
+            print(f"    {status} | similarity: {similarity:.4f} (threshold: {self.cosine_threshold:.4f})")
+            return matched, float(similarity)
         except Exception as e:
-            pass
-            return None
-    
-    # ========== HELPER FUNCTIONS ==========
-    
-    def _save_user_account(self, user_data: Dict) -> bool:
-        """Lưu tài khoản vào accounts.json"""
-        try:
-            # Load existing data
-            if self.accounts_file.exists():
-                with open(self.accounts_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-            else:
-                data = {"admin_accounts": [], "user_accounts": []}
-            
-            # Check if user exists
-            for i, user in enumerate(data['user_accounts']):
-                if user['username'] == user_data['username']:
-                    data['user_accounts'][i] = user_data
-                    pass
-                    break
-            else:
-                data['user_accounts'].append(user_data)
-                pass
-            
-            # Save
-            with open(self.accounts_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-            
-            return True
-            
-        except Exception as e:
-            pass
-            return False
-    
-    def _load_user_account(self, username: str) -> Optional[Dict]:
-        """Load tài khoản từ accounts.json"""
-        try:
-            if not self.accounts_file.exists():
-                return None
-            
-            with open(self.accounts_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            for user in data.get('user_accounts', []):
-                if user['username'] == username:
-                    return user
-            
-            return None
-            
-        except Exception as e:
-            pass
-            return None
-
-
-# ============================================================================
-# TESTING
-# ============================================================================
-
-if __name__ == "__main__":
-    pass
-    pass
-    pass
-    
-    # Test configuration
-    config = {
-        'confidence_threshold': 0.75,
-        'min_face_size': 40,
-        'cosine_threshold': 0.75
-    }
-    
-    model = ArcFaceModel(config)
-    pass
-    pass
-    pass
-    pass
-
+            print(f"❌ [VERIFY_DATA] Error: {e}")
+            return False, 0.0

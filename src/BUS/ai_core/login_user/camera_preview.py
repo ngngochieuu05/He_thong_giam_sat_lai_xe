@@ -26,6 +26,7 @@ class LiveCameraPreview:
     """
     
     def __init__(self, camera_index: int = 0):
+        print(f"\n📸 [CAMERA_PREVIEW_INIT] Creating LiveCameraPreview with camera_index={camera_index}")
         self.camera_index = camera_index
         self.cap = None
         self.is_running = False
@@ -33,6 +34,10 @@ class LiveCameraPreview:
         self.current_frame = None
         self.face_detected = False
         self.auto_captured = False
+        
+        # CRITICAL FIX: Thread-safe lock cho auto_captured flag
+        self._capture_lock = threading.Lock()
+        self._capture_event = threading.Event()  # Event để signal khi capture hoàn tất
         
     def start(self, on_frame_callback: Callable[[str], None], 
              on_auto_capture: Optional[Callable[[np.ndarray], None]] = None):
@@ -43,11 +48,16 @@ class LiveCameraPreview:
             on_frame_callback: Function nhận base64 frame để hiển thị
             on_auto_capture: Function được gọi khi tự động chụp ảnh
         """
+        print(f"\n▶️  [CAMERA_PREVIEW_START] Starting camera preview with index {self.camera_index}")
         log_print(f"📷 [CAMERA] Starting camera index {self.camera_index}...")
-        self.cap = cv2.VideoCapture(self.camera_index)
+        # Use CAP_DSHOW for Windows to properly open camera by index
+        # Without this, cv2 may silently fallback to index 0 if index 1 not available
+        self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
         if not self.cap.isOpened():
-            pass
+            print(f"❌ [CAMERA_PREVIEW] FAILED to open camera {self.camera_index}")
             return False
+        else:
+            print(f"✅ [CAMERA_PREVIEW] SUCCESS: Opened camera {self.camera_index}\n")
         
         # Set camera properties for better performance
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -81,15 +91,17 @@ class LiveCameraPreview:
         pass
     
     def reset_capture(self):
-        """Reset trạng thái capture để cho phép chụp lại ngay lập tức"""
-        self.auto_captured = False
-        pass
+        """Reset trạng thái capture để cho phép chụp lại ngay lập tức - THREAD-SAFE"""
+        with self._capture_lock:
+            self.auto_captured = False
+            self._capture_event.clear()
+        print("[CAMERA] Reset capture state")
     
     def _camera_loop(self):
         """Loop chính để đọc frames - OPTIMIZED (Log tối thiểu)"""
         frame_count = 0
         last_detection_time = 0
-        detection_interval = 0.5  # Chỉ detect mỗi 500ms
+        detection_interval = 0.1  # Detect mỗi 100ms (tăng sensitivity)
         
         # Load face cascade 1 lần duy nhất
         self.face_cascade = cv2.CascadeClassifier(
@@ -100,7 +112,6 @@ class LiveCameraPreview:
         while self.is_running:
             ret, frame = self.cap.read()
             if not ret:
-                pass
                 break
             
             frame_count += 1
@@ -119,11 +130,17 @@ class LiveCameraPreview:
                 self.face_detected = self._detect_face_in_oval(small_frame)
                 last_detection_time = current_time
                 
-                # LOGIC GỐC: Chụp ngay khi phát hiện mặt
-                if self.face_detected and not self.auto_captured:
-                    if self.on_auto_capture:
-                        pass
-                        self.auto_captured = True
+                # CRITICAL FIX: Thread-safe callback - chỉ gọi đúng 1 lần
+                if self.face_detected:
+                    with self._capture_lock:
+                        # Double-check pattern: kiểm tra lại trong lock
+                        if not self.auto_captured and self.on_auto_capture:
+                            self.auto_captured = True
+                            self._capture_event.set()
+                            # Gọi callback NGOÀI lock để tránh deadlock
+                    
+                    # Gọi callback NGOÀI lock (đã set flag rồi)
+                    if self.auto_captured and self.on_auto_capture:
                         self.on_auto_capture(frame)
             
             # Vẽ oval guide (không có countdown)
@@ -292,6 +309,7 @@ class LiveCameraPreview:
         try:
             # Sử dụng cascade đã load sẵn
             if not hasattr(self, 'face_cascade'):
+                print(f"❌ [OVAL_DETECT] Face cascade not loaded")
                 return False
             
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -331,6 +349,8 @@ class LiveCameraPreview:
             return False
             
         except Exception as e:
-            pass
+            print(f"❌ [OVAL_DETECT] Exception: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return False
 

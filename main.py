@@ -29,6 +29,18 @@ def main(page: ft.Page):
     admin_icon_path = r"src\GUI\data\image_admin\image_btnlogo_admin.png"
     driver_icon_path = r"src\GUI\data\image_laucher\image_btnlogo_user.png"
 
+    def glass_card(content, width=None, height=None, padding=24):
+        return ft.Container(
+            width=width,
+            height=height,
+            padding=padding,
+            bgcolor=ft.Colors.with_opacity(0.16, ft.Colors.WHITE),
+            border=ft.border.all(1, ft.Colors.with_opacity(0.18, ft.Colors.WHITE)),
+            border_radius=28,
+            shadow=ft.BoxShadow(blur_radius=28, color=ft.Colors.BLACK45, offset=ft.Offset(0, 14)),
+            content=content,
+        )
+
     # --- HÀM CHUYỂN TRANG (MỚI THÊM) ---
     def go_to_user_page(e):
         print(">> Đang chuyển sang giao diện Tài xế...")
@@ -67,63 +79,59 @@ def main(page: ft.Page):
     # --- 3. UI COMPONENTS ---
 
     logo = ft.Image(
-        src=logo_path, width=180, height=180, fit=ft.ImageFit.CONTAIN,
-        error_content=ft.Icon(ft.Icons.SHIELD, size=80, color=ft.Colors.WHITE54)
+        src=logo_path, width=88, height=88, fit=ft.ImageFit.CONTAIN,
+        error_content=ft.Icon(ft.Icons.SHIELD, size=64, color=ft.Colors.WHITE54)
     )
 
-    title = ft.Text("HỆ THỐNG GIÁM SÁT LÁI XE", size=36, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
-    subtitle = ft.Text("An toàn trên mọi nẻo đường", size=18, color=ft.Colors.WHITE70, italic=True)
+    title = ft.Text("HỆ THỐNG GIÁM SÁT LÁI XE", size=34, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER, color=ft.Colors.WHITE)
+    subtitle = ft.Text("Chọn vai trò để vào launcher đồng bộ cùng giao diện phiên hiện tại.", size=15, color=ft.Colors.WHITE70, text_align=ft.TextAlign.CENTER)
 
-    # --- NÚT ADMIN ---
-    admin_button = ft.Container(
-        content=ft.Column(
-            [
-                ft.Image(src=admin_icon_path, width=90, height=90, fit=ft.ImageFit.CONTAIN,
-                         error_content=ft.Icon(ft.Icons.ADMIN_PANEL_SETTINGS, size=70, color=ft.Colors.WHITE)),
-                ft.Container(height=15),
-                ft.Text("QUẢN TRỊ VIÊN", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                ft.Text("Thiết lập & Báo cáo", size=13, color=ft.Colors.WHITE70)
-            ],
-            alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER
-        ),
-        width=280, height=260,
-        gradient=ft.LinearGradient(
-            begin=ft.alignment.top_left, end=ft.alignment.bottom_right,
-            colors=["#4a6fa5", "#375a8c"]
-        ),
-        border_radius=25, padding=20, ink=True,
-        shadow=ft.BoxShadow(blur_radius=15, color=ft.Colors.BLACK54, offset=ft.Offset(0, 8)),
-        on_click=go_to_admin_page,
-        animate_scale=ft.Animation(100, ft.AnimationCurve.EASE_OUT),
-        on_hover=lambda e: _animate_hover(e)
-    )
+    def create_role_card(title_text, subtitle_text, image_src, fallback_icon, accent_color, on_click):
+        return ft.Container(
+            ink=True,
+            on_click=on_click,
+            animate_scale=ft.Animation(140, ft.AnimationCurve.EASE_OUT),
+            on_hover=_animate_hover,
+            content=glass_card(
+                width=290,
+                height=240,
+                padding=22,
+                content=ft.Column([
+                    ft.Container(
+                        width=84,
+                        height=84,
+                        border_radius=24,
+                        bgcolor=ft.Colors.with_opacity(0.16, accent_color),
+                        alignment=ft.alignment.center,
+                        content=ft.Image(
+                            src=image_src,
+                            width=64,
+                            height=64,
+                            fit=ft.ImageFit.CONTAIN,
+                            error_content=ft.Icon(fallback_icon, size=56, color=accent_color),
+                        ),
+                    ),
+                    ft.Container(height=12),
+                    ft.Text(title_text, size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                    ft.Text(subtitle_text, size=13, color=ft.Colors.WHITE70, text_align=ft.TextAlign.CENTER),
+                    ft.Container(expand=True),
+                    ft.Container(
+                        width=float("inf"),
+                        height=52,
+                        border_radius=16,
+                        bgcolor=accent_color,
+                        alignment=ft.alignment.center,
+                        content=ft.Row([
+                            ft.Text("Truy cập", size=15, weight=ft.FontWeight.BOLD, color="#06131B"),
+                            ft.Icon(ft.Icons.ARROW_FORWARD, color="#06131B", size=20),
+                        ], alignment=ft.MainAxisAlignment.CENTER, spacing=8),
+                    ),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            ),
+        )
 
-    # --- NÚT TÀI XẾ (ĐÃ SỬA ON_CLICK) ---
-    driver_button = ft.Container(
-        content=ft.Column(
-            [
-                ft.Image(src=driver_icon_path, width=90, height=90, fit=ft.ImageFit.CONTAIN,
-                         error_content=ft.Icon(ft.Icons.DIRECTIONS_CAR, size=70, color=ft.Colors.WHITE)),
-                ft.Container(height=15),
-                ft.Text("TÀI XẾ", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                ft.Text("Giám sát hành trình", size=13, color=ft.Colors.WHITE70)
-            ],
-            alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER
-        ),
-        width=280, height=260,
-        gradient=ft.LinearGradient(
-            begin=ft.alignment.top_left, end=ft.alignment.bottom_right,
-            colors=["#2e7d6a", "#205c4d"]
-        ),
-        border_radius=25, padding=20, ink=True,
-        shadow=ft.BoxShadow(blur_radius=15, color=ft.Colors.BLACK54, offset=ft.Offset(0, 8)),
-        
-        # --- THAY ĐỔI Ở ĐÂY: GỌI HÀM CHUYỂN TRANG ---
-        on_click=go_to_user_page, 
-        
-        animate_scale=ft.Animation(100, ft.AnimationCurve.EASE_OUT),
-        on_hover=lambda e: _animate_hover(e)
-    )
+    admin_button = create_role_card("Quản trị viên", "Thiết lập hệ thống, thống kê và quản lý dữ liệu", admin_icon_path, ft.Icons.ADMIN_PANEL_SETTINGS, "#56CCF2", go_to_admin_page)
+    driver_button = create_role_card("Tài xế", "Đăng nhập, bắt đầu phiên lái và dùng tiện ích", driver_icon_path, ft.Icons.DIRECTIONS_CAR, "#63D471", go_to_user_page)
 
     footer = ft.Container(
         content=ft.Text("© 2026 Driver v1.0.0", size=12, color=ft.Colors.WHITE38),
@@ -131,31 +139,40 @@ def main(page: ft.Page):
     )
 
     # --- 4. BỐ CỤC CHÍNH ---
-    main_content = ft.Column(
-        [
-            ft.Container(height=40),
-            logo, title, subtitle,
-            ft.Container(height=40),
-            ft.Row([admin_button, driver_button], spacing=50, alignment=ft.MainAxisAlignment.CENTER, wrap=True),
-            ft.Container(expand=True),
-            footer
-        ],
-        alignment=ft.MainAxisAlignment.CENTER,
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        scroll=ft.ScrollMode.HIDDEN
+    main_content = glass_card(
+        width=760,
+        padding=30,
+        content=ft.Column(
+            [
+                logo,
+                title,
+                subtitle,
+                ft.Container(height=28),
+                ft.Row([admin_button, driver_button], spacing=24, alignment=ft.MainAxisAlignment.CENTER, wrap=True),
+                ft.Container(height=10),
+                footer,
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            scroll=ft.ScrollMode.AUTO,
+        )
     )
 
     # --- 5. LỚP NỀN ---
     background_layer = ft.Stack([
-        ft.Image(src=bg_path, width=float("inf"), height=float("inf"), fit=ft.ImageFit.COVER, 
-                 error_content=ft.Container(bgcolor=ft.Colors.BLUE_GREY_900)),
-        ft.Container(expand=True, bgcolor=ft.Colors.with_opacity(0.50, ft.Colors.BLACK))
+        ft.Container(
+            expand=True,
+            blur=14,
+            content=ft.Image(src=bg_path, width=float("inf"), height=float("inf"), fit=ft.ImageFit.COVER, 
+                     error_content=ft.Container(bgcolor=ft.Colors.BLUE_GREY_900)),
+        ),
+        ft.Container(expand=True, bgcolor=ft.Colors.with_opacity(0.62, ft.Colors.BLACK))
     ])
 
     # --- 6. GHÉP ---
     layout = ft.Stack([
         background_layer,
-        ft.Container(content=main_content, alignment=ft.alignment.center, padding=20)
+        ft.Container(content=main_content, alignment=ft.alignment.center, padding=24)
     ], expand=True)
 
     page.add(layout)

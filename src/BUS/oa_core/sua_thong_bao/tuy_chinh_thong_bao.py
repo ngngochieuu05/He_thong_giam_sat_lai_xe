@@ -15,7 +15,8 @@ from typing import Optional, Dict, List, Any
 
 # ===== PATH CONFIG =====
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(os.path.dirname(BASE_DIR), "data")
+# Data dir chuyển sang GUI/data để đồng bộ với DB và admin UI
+DATA_DIR = os.path.normpath(os.path.join(BASE_DIR, "..", "..", "..", "..", "src", "GUI", "data"))
 LOG_FILE_PATH = os.path.join(DATA_DIR, "thong_bao_log.json")
 API_CONFIG_PATH = os.path.join(DATA_DIR, "API.json")
 
@@ -36,19 +37,24 @@ class ThongBaoService:
         self._config = self._load_api_config()
     
     def _load_api_config(self) -> Dict:
-        """Load cấu hình từ API.json"""
+        """Load cấu hình: thử DB trước, fallback về API.json."""
+        # Thử đọc từ DB
+        try:
+            from src.DAL.cau_hinh_dal import lay_gia_tri
+            token = lay_gia_tri("telegram_bot_token") or ""
+            chat_id = lay_gia_tri("telegram_chat_id") or ""
+            if token:
+                return {"telegram": {"bot_token": token, "chat_id": chat_id}}
+        except Exception:
+            pass
+        # Fallback: đọc JSON
         try:
             if os.path.exists(API_CONFIG_PATH):
                 with open(API_CONFIG_PATH, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except Exception:
             pass
-        return {
-            "telegram": {
-                "bot_token": "",
-                "chat_id": ""
-            }
-        }
+        return {"telegram": {"bot_token": "", "chat_id": ""}}
     
     def _save_api_config(self) -> bool:
         """Lưu cấu hình vào API.json"""
@@ -188,32 +194,31 @@ class ThongBaoService:
     
     def save_log(self, data: Dict) -> bool:
         """
-        Lưu log vào file JSON
-        
-        Args:
-            data: Dict chứa time, chat_id, content, status, error
-            
-        Returns:
-            True nếu thành công
+        Lưu log vào file JSON và đồng bộ lên DB (nếu kết nối được).
         """
         try:
-            # Đọc log hiện tại
             logs = self.load_log()
-            
-            # Thêm record mới vào cuối danh sách
             logs.append(data)
-            
-            # Giới hạn tối đa 700 records, xóa log cũ nhất ở đầu
             if len(logs) > MAX_LOG_RECORDS:
                 logs = logs[-MAX_LOG_RECORDS:]
-            
-            # Tạo thư mục nếu chưa tồn tại
             os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
-            
-            # Ghi file
             with open(LOG_FILE_PATH, 'w', encoding='utf-8') as f:
                 json.dump({"logs": logs}, f, ensure_ascii=False, indent=2)
-            
+
+            # Đồng bộ lên DB (non-blocking)
+            def _sync_db():
+                try:
+                    from src.DAL.thong_bao_dal import luu_thong_bao_log
+                    luu_thong_bao_log(
+                        log_time=data.get("time", ""),
+                        chat_id=data.get("chat_id", ""),
+                        content=data.get("content", ""),
+                        trang_thai="success" if data.get("status") == "success" else "fail",
+                        error_message=data.get("error") or None,
+                    )
+                except Exception:
+                    pass
+            threading.Thread(target=_sync_db, daemon=True).start()
             return True
         except Exception as e:
             if self._debug_mode:
@@ -222,24 +227,39 @@ class ThongBaoService:
     
     def load_log(self) -> List[Dict]:
         """
-        Đọc log từ file JSON
-        
-        Returns:
-            List các record log
+        Đọc log: thử DB trước, fallback về JSON nếu DB không khả dụng.
         """
+        try:
+            from src.DAL.thong_bao_dal import lay_thong_bao_logs
+            rows = lay_thong_bao_logs(limit=200)
+            if rows:
+                return [
+                    {"time": r[1], "chat_id": r[2], "content": r[3],
+                     "status": r[4], "error": r[5] or ""}
+                    for r in rows
+                ]
+        except Exception:
+            pass
+        # Fallback: đọc JSON
         try:
             if os.path.exists(LOG_FILE_PATH):
                 with open(LOG_FILE_PATH, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    return data.get("logs", [])
+                    return json.load(f).get("logs", [])
         except Exception as e:
             if self._debug_mode:
                 print(f"[DEBUG] load_log error: {e}")
         return []
-    
+
     def clear_log(self) -> bool:
-        """Xóa toàn bộ log"""
+        """Xóa toàn bộ log (cả DB và JSON)."""
         try:
+            # Xóa DB
+            try:
+                from src.DAL.thong_bao_dal import xoa_thong_bao_logs
+                xoa_thong_bao_logs()
+            except Exception:
+                pass
+            # Xóa JSON
             os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
             with open(LOG_FILE_PATH, 'w', encoding='utf-8') as f:
                 json.dump({"logs": []}, f, ensure_ascii=False)
@@ -267,7 +287,11 @@ class ThongBaoService:
         
         # ===== SYSTEM COMMANDS =====
         if command == "/start":
-            return self._cmd_start()
+            # For /start, we need to pass chat_id and args for token linking
+            # username and user_id are stored in instance variables by process_update
+            username = getattr(self, '_current_username', '')
+            user_id = getattr(self, '_current_user_id', '')
+            return self._cmd_start(args=args, chat_id=chat_id, username=username, user_id=user_id)
         elif command == "/status":
             return self._cmd_status()
         elif command == "/ping":
@@ -308,7 +332,74 @@ class ThongBaoService:
     
     # ===== SYSTEM COMMAND IMPLEMENTATIONS =====
     
-    def _cmd_start(self) -> str:
+    def _cmd_start(self, args: list = None, chat_id: str = "", username: str = "", user_id: str = "") -> str:
+        """
+        Handle /start command with optional token for Telegram linking
+        
+        Args:
+            args: Command arguments (token if provided)
+            chat_id: Telegram chat_id
+            username: Telegram username
+            user_id: Telegram user_id
+        """
+        # Import telegram_link_service
+        try:
+            import sys
+            import os
+            # Add parent directory to path to import telegram_link_service
+            parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            if parent_dir not in sys.path:
+                sys.path.insert(0, parent_dir)
+            
+            from telegram_link_service import validate_token, bind_telegram, check_bound
+        except Exception as e:
+            print(f"[TelegramBot] Error importing telegram_link_service: {e}")
+            # Fall back to normal start message
+            args = None
+        
+        # Check if token provided
+        if args and len(args) > 0:
+            token = args[0].strip()
+            
+            # Validate token
+            validated_username = validate_token(token)
+            
+            if validated_username:
+                # Check if already linked
+                existing_link = check_bound(validated_username)
+                if existing_link:
+                    return f"""⚠️ <b>Tài khoản đã được liên kết</b>
+
+Tài khoản <b>{validated_username}</b> đã được liên kết với Telegram trước đó.
+
+Nếu bạn muốn liên kết lại, vui lòng liên hệ quản trị viên."""
+                
+                # Bind telegram
+                telegram_username = f"@{username}" if username else ""
+                success = bind_telegram(validated_username, chat_id, telegram_username)
+                
+                if success:
+                    return f"""✅ <b>Liên kết thành công!</b>
+
+Tài khoản <b>{validated_username}</b> đã được liên kết với Telegram.
+
+Bạn sẽ nhận được thông báo an toàn từ hệ thống SafeDrive qua Telegram này.
+
+🔔 <i>Chúc bạn lái xe an toàn!</i>"""
+                else:
+                    return f"""❌ <b>Liên kết thất bại</b>
+
+Không thể liên kết tài khoản <b>{validated_username}</b>.
+
+Vui lòng thử lại hoặc liên hệ quản trị viên."""
+            else:
+                return """❌ <b>Token không hợp lệ</b>
+
+Token không tồn tại hoặc đã hết hạn (24 giờ).
+
+Vui lòng quay lại ứng dụng và tạo token mới."""
+        
+        # Normal start message (no token)
         return """🤖 <b>Hệ thống Giám sát Lái xe</b>
 
 Chào mừng bạn đến với bot thông báo!
@@ -500,12 +591,26 @@ Dùng /start để xem danh sách các lệnh có sẵn."""
             chat = message.get("chat", {})
             chat_id = str(chat.get("id", ""))
             
+            # Extract user info for token linking
+            from_user = message.get("from", {})
+            telegram_username = from_user.get("username", "")
+            telegram_user_id = str(from_user.get("id", ""))
+            
             if not text or not chat_id:
                 return None
             
             # Kiểm tra nếu là command
             if text.startswith("/"):
+                # Store user info temporarily for _cmd_start to access
+                self._current_username = telegram_username
+                self._current_user_id = telegram_user_id
+                
                 response = self.handle_command(text, chat_id)
+                
+                # Clear stored info
+                self._current_username = ""
+                self._current_user_id = ""
+                
                 return response
             
             return None

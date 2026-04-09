@@ -34,31 +34,25 @@ class AdminUI:
             width=400, padding=40, bgcolor=ft.Colors.WHITE, border_radius=20,
             shadow=ft.BoxShadow(blur_radius=20, color=ft.Colors.BLACK12),
             content=ft.Column([
-                # Nút quay lại và Logo
-                ft.Container(
-                    content=ft.Stack([
-                        ft.Container(
-                            content=ft.Column([
-                                ft.Image(src=self.admin_icon_path, width=100, height=80, fit=ft.ImageFit.CONTAIN,
-                                    error_content=ft.Icon(ft.Icons.ADMIN_PANEL_SETTINGS, size=60, color=self.primary_color)),
-                                ft.Text("ĐĂNG NHẬP", size=26, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_GREY_800),
-                                ft.Text("Hệ thống quản trị", size=14, color=ft.Colors.GREY),
-                            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                            alignment=ft.alignment.center
+                ft.Row([
+                    ft.TextButton(
+                        text="Quay lại",
+                        icon=ft.Icons.ARROW_BACK,
+                        on_click=lambda e: self._go_back_to_main(),
+                        style=ft.ButtonStyle(
+                            bgcolor=ft.Colors.with_opacity(0.10, ft.Colors.BLACK),
+                            color=ft.Colors.BLUE_GREY_800,
+                            padding=ft.padding.symmetric(horizontal=16, vertical=12),
+                            shape=ft.RoundedRectangleBorder(radius=999),
                         ),
-                        ft.Container(
-                            content=ft.IconButton(
-                                icon=ft.Icons.ARROW_BACK,
-                                icon_color=ft.Colors.BLUE_GREY_700,
-                                on_click=lambda e: self._go_back_to_main(),
-                                tooltip="Quay lại"
-                            ),
-                            left=0,
-                            top=0
-                        )
-                    ]),
-                    height=150
-                ),
+                    ),
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Column([
+                    ft.Image(src=self.admin_icon_path, width=100, height=80, fit=ft.ImageFit.CONTAIN,
+                        error_content=ft.Icon(ft.Icons.ADMIN_PANEL_SETTINGS, size=60, color=self.primary_color)),
+                    ft.Text("ĐĂNG NHẬP", size=26, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_GREY_800),
+                    ft.Text("Hệ thống quản trị", size=14, color=ft.Colors.GREY),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 ft.Container(height=10),
                 user_input, ft.Container(height=15),
                 pass_input, ft.Container(height=25),
@@ -67,13 +61,14 @@ class AdminUI:
                     style=ft.ButtonStyle(bgcolor=self.primary_color, color=ft.Colors.WHITE, shape=ft.RoundedRectangleBorder(radius=10)),
                     on_click=lambda e: self._handle_login(user_input.value, pass_input.value)
                 ),
-                
-                 ft.Container(height=20),
-                 ft.Row([ft.Container(content=ft.Divider(), expand=True), ft.Text("HOẶC", size=12, color=ft.Colors.GREY), ft.Container(content=ft.Divider(), expand=True)], alignment=ft.MainAxisAlignment.CENTER),
-                 ft.Container(height=20),
-                 ft.TextButton(content=ft.Text("Đăng ký tài khoản Admin mới", color=self.primary_color, weight=ft.FontWeight.BOLD),
-                    on_click=lambda e: self.show_register_view()
-                )
+                ft.Container(height=10),
+                ft.Text(
+                    "Quay lại để chọn đúng vai trò nếu bạn không phải quản trị viên.",
+                    size=12,
+                    color=ft.Colors.BLUE_GREY_400,
+                    text_align=ft.TextAlign.CENTER,
+                ),
+
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
         )
         self._render_background(login_card)
@@ -87,10 +82,32 @@ class AdminUI:
         ])))
 
     def _render_background(self, card):
+        # Bao bọc card bằng cột cuộn để khi thu nhỏ màn hình không bị mất nội dung hoặc dính lề
+        scroll_wrapper = ft.Column(
+            controls=[
+                ft.Container(expand=True),
+                card,
+                ft.Container(expand=True)
+            ],
+            scroll=ft.ScrollMode.AUTO,
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            expand=True
+        )
+
         layout = ft.Stack([
-            ft.Image(src=self.bg_image_path, width=float("inf"), height=float("inf"), fit=ft.ImageFit.COVER),
-            ft.Container(expand=True, bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.BLUE_GREY_900)),
-            ft.Container(expand=True, alignment=ft.alignment.center, content=card)
+            ft.Container(
+                content=ft.Image(src=self.bg_image_path, width=float("inf"), height=float("inf"), fit=ft.ImageFit.COVER),
+                expand=True,
+                blur=12,
+            ),
+            ft.Container(expand=True, bgcolor=ft.Colors.with_opacity(0.58, ft.Colors.BLUE_GREY_900)),
+            ft.Container(
+                expand=True,
+                alignment=ft.alignment.center,
+                content=scroll_wrapper,
+                padding=20 # Lề an toàn để bảng không bao giờ đụng cạnh màn hình
+            )
         ], expand=True)
         self.page.add(layout)
 
@@ -143,8 +160,8 @@ class AdminUI:
                     self.page.controls.clear()
                     self.page.update()
                     
-                    from . import laucher_admin
-                    laucher_admin.main(self.page, self.go_back_callback)
+                    from ..control import main_admin
+                    main_admin.main(self.page, self.go_back_callback)
                 except Exception as e:
                     self.page.open(ft.SnackBar(ft.Text(f"Lỗi mở Launcher: {e}"), bgcolor=ft.Colors.RED))
             else:

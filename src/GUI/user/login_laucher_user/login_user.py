@@ -4,6 +4,17 @@ import os
 import json
 import threading
 from . import laucher_user
+from ..control.ui_styles import elevated_button, text_button, icon_button
+
+# Initialize Telegram bot early
+try:
+    import sys
+    bot_init_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    if bot_init_path not in sys.path:
+        sys.path.insert(0, bot_init_path)
+    from GUI import bot_init
+except:
+    pass
 
 # ========== TẮT TẤT CẢ LOGGING ĐỂ GIAO DIỆN SẠCH SẼ ==========
 import warnings
@@ -36,6 +47,18 @@ class SuppressOutput:
         sys.stderr.close()
         sys.stderr = self._original_stderr
 # ============================================================
+
+# ========== LOAD CAMERA CONFIG ==========
+from src.config_loader import get_camera_index
+from src.DAL import (
+    cap_nhat_tai_xe,
+    dang_nhap_tai_xe,
+    export_accounts_to_json,
+    generate_next_driver_id,
+    get_all_driver_accounts_from_db,
+    get_driver_account_from_db,
+)
+# ========================================
 
 # Import moved to lazy function
 ArcFaceModel = None
@@ -120,6 +143,48 @@ class UserUI:
         # Giúp giảm thời gian chờ khi bấm nút "Đăng nhập khuôn mặt"
         self._preload_ai_model()
 
+    def _load_face_accounts_with_fallback(self):
+        print(f"📂 [DB] Loading driver accounts from database...")
+        db_accounts = get_all_driver_accounts_from_db(include_inactive=True)
+        active_accounts = [acc for acc in db_accounts if int(acc.get("is_active") or 0) == 1]
+        inactive_accounts = [acc for acc in db_accounts if int(acc.get("is_active") or 0) != 1]
+        print(
+            f"🔍 [DB] Tổng tài khoản DB: {len(db_accounts)} | active: {len(active_accounts)} | inactive: {len(inactive_accounts)}"
+        )
+        print(f"🔍 [SCAN] Đang quét tất cả {len(db_accounts)} tài khoản (bao gồm inactive)...")
+
+        accounts_with_face = [
+            acc for acc in active_accounts
+            if isinstance(acc.get("face_data"), str) and acc.get("face_data", "").strip()
+        ]
+        if accounts_with_face:
+            print(f"🔍 [SCAN] Tìm thấy {len(accounts_with_face)} tài khoản có face data trong DB")
+            return accounts_with_face
+
+        print("⚠️  [DB] Không có face_data trong DB, thử fallback từ accounts.json...")
+        accounts_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "data", "accounts.json")
+        )
+
+        try:
+            with open(accounts_path, "r", encoding="utf-8") as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            print(f"❌ [FALLBACK] Không tìm thấy file: {accounts_path}")
+            return []
+        except Exception as ex:
+            print(f"❌ [FALLBACK] Lỗi đọc accounts.json: {ex}")
+            return []
+
+        json_accounts = data.get("user_accounts", [])
+        json_accounts_with_face = [
+            acc for acc in json_accounts
+            if int(acc.get("is_active", 1) or 0) == 1
+            if isinstance(acc.get("face_data"), str) and acc.get("face_data", "").strip()
+        ]
+        print(f"🔄 [FALLBACK] Tìm thấy {len(json_accounts_with_face)} tài khoản có face data trong accounts.json")
+        return json_accounts_with_face
+
     def _preload_ai_model(self):
         print("🚀 [BACKGROUND] Pre-loading AI model...")
         def _load_task():
@@ -138,8 +203,8 @@ class UserUI:
         self.page.clean()
         
         # Input fields
-        user_input = ft.TextField(label="Tài khoản", value= "user01", prefix_icon=ft.Icons.PERSON, border_radius=10, bgcolor=ft.Colors.WHITE, text_size=14)
-        pass_input = ft.TextField(label="Mật khẩu", value= "123456", prefix_icon=ft.Icons.LOCK, password=True, can_reveal_password=True, border_radius=10, bgcolor=ft.Colors.WHITE, text_size=14)
+        user_input = ft.TextField(label="Tài khoản", prefix_icon=ft.Icons.PERSON, border_radius=10, bgcolor=ft.Colors.WHITE, text_size=14)
+        pass_input = ft.TextField(label="Mật khẩu", prefix_icon=ft.Icons.LOCK, password=True, can_reveal_password=True, border_radius=10, bgcolor=ft.Colors.WHITE, text_size=14)
 
         # Login Card
         login_card = ft.Container(
@@ -149,38 +214,32 @@ class UserUI:
             border_radius=20,
             shadow=ft.BoxShadow(blur_radius=20, color=ft.Colors.BLACK12),
             content=ft.Column([
-                # Nút quay lại và Logo
-                ft.Container(
-                    content=ft.Stack([
-                        ft.Container(
-                            content=ft.Column([
-                                ft.Image(
-                                    src=self.login_car_icon_path, 
-                                    width=100, height=80, 
-                                    fit=ft.ImageFit.CONTAIN,
-                                    error_content=ft.Column([
-                                        ft.Icon(ft.Icons.DIRECTIONS_CAR_FILLED, size=60, color=ft.Colors.BLUE),
-                                        ft.Text("Ảnh lỗi", size=10, color=ft.Colors.RED)
-                                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
-                                ),
-                                ft.Text("ĐĂNG NHẬP", size=26, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_GREY_800),
-                                ft.Text("Hệ thống giám sát lái xe", size=14, color=ft.Colors.GREY),
-                            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                            alignment=ft.alignment.center
+                ft.Row([
+                    ft.TextButton(
+                        text="Quay lại",
+                        icon=ft.Icons.ARROW_BACK,
+                        on_click=lambda e: self._go_back_to_main(),
+                        style=ft.ButtonStyle(
+                            bgcolor=ft.Colors.with_opacity(0.10, ft.Colors.BLACK),
+                            color=ft.Colors.BLUE_GREY_800,
+                            padding=ft.padding.symmetric(horizontal=16, vertical=12),
+                            shape=ft.RoundedRectangleBorder(radius=999),
                         ),
-                        ft.Container(
-                            content=ft.IconButton(
-                                icon=ft.Icons.ARROW_BACK,
-                                icon_color=ft.Colors.GREEN_700,
-                                on_click=lambda e: self._go_back_to_main(),
-                                tooltip="Quay lại"
-                            ),
-                            left=0,
-                            top=0
-                        )
-                    ]),
-                    height=150
-                ),
+                    )
+                ], alignment=ft.MainAxisAlignment.START),
+                ft.Column([
+                    ft.Image(
+                        src=self.login_car_icon_path, 
+                        width=100, height=80, 
+                        fit=ft.ImageFit.CONTAIN,
+                        error_content=ft.Column([
+                            ft.Icon(ft.Icons.DIRECTIONS_CAR_FILLED, size=60, color=ft.Colors.BLUE),
+                            ft.Text("Ảnh lỗi", size=10, color=ft.Colors.RED)
+                        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                    ),
+                    ft.Text("ĐĂNG NHẬP", size=26, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_GREY_800),
+                    ft.Text("Hệ thống giám sát lái xe", size=14, color=ft.Colors.GREY),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 ft.Container(height=10),
                 
                 user_input,
@@ -188,45 +247,58 @@ class UserUI:
                 pass_input,
                 ft.Container(
                     content=ft.TextButton(
-                        "Quên mật khẩu?",
+                        text="Quên mật khẩu?",
                         on_click=lambda e: self._handle_forgot_password(),
-                        style=ft.ButtonStyle(color=ft.Colors.BLUE_700)
+                        style=ft.ButtonStyle(
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            overlay_color=ft.Colors.with_opacity(0.2, ft.Colors.BLUE_600),
+                            text_style=ft.TextStyle(color=ft.Colors.BLUE_600, weight=ft.FontWeight.W_600),
+                        )
                     ),
                     alignment=ft.alignment.center_right
                 ),
                 ft.Container(height=10),
                 
                 # Nút Đăng nhập
-                ft.ElevatedButton(
-                    "Đăng nhập", 
-                    width=float("inf"), 
-                    height=50,
-                    style=ft.ButtonStyle(
-                        bgcolor=ft.Colors.GREEN_700, 
-                        color=ft.Colors.WHITE,
-                        shape=ft.RoundedRectangleBorder(radius=10)
-                    ),
-                    on_click=lambda e: self._handle_login(user_input.value, pass_input.value)
-                ),
+                elevated_button("Đăng nhập", on_click=lambda e: self._handle_login(user_input.value, pass_input.value), kind="primary", width=float("inf"), height=50),
                 
                 ft.Container(height=15),
                 
                 # Nút đăng nhập bằng khuôn mặt
-                ft.ElevatedButton(
-                    "Đăng nhập bằng khuôn mặt",
-                    width=float("inf"),
-                    height=50,
-                    style=ft.ButtonStyle(
-                        bgcolor=ft.Colors.BLUE_700,
-                        color=ft.Colors.WHITE,
-                        shape=ft.RoundedRectangleBorder(radius=10)
-                    ),
-                    on_click=lambda e: self._handle_face_login()
-                ),
+                elevated_button("Đăng nhập bằng khuôn mặt", on_click=lambda e: self._handle_face_login(), kind="secondary", width=float("inf"), height=50),
                 
                 ft.Container(height=20),
-                ft.TextButton("Đăng ký tài khoản mới", on_click=lambda e: self.show_register_view())
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
+                ft.Container(
+                    width=float("inf"),
+                    content=ft.TextButton(
+                        text="Đăng ký tài khoản mới",
+                        icon=ft.Icons.PERSON_ADD_ALT_1,
+                        on_click=lambda e: self.show_register_view(),
+                        style=ft.ButtonStyle(
+                            bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.BLUE),
+                            color="#1E4FA3",
+                            padding=ft.padding.symmetric(horizontal=18, vertical=14),
+                            shape=ft.RoundedRectangleBorder(radius=14),
+                            side=ft.BorderSide(1, ft.Colors.with_opacity(0.20, ft.Colors.BLUE)),
+                            text_style=ft.TextStyle(size=14, weight=ft.FontWeight.W_700),
+                        ),
+                    ),
+                )
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True)
+        )
+
+        # Bao bọc card bằng cột cuộn để khi thu nhỏ màn hình không bị mất nôi dung hoặc dính lề
+        login_wrapper = ft.Column(
+            controls=[
+                # Spacer giả để đẩy nội dung ra giữa nếu có khoảng trống
+                ft.Container(expand=True),
+                login_card,
+                ft.Container(expand=True)
+            ],
+            scroll=ft.ScrollMode.AUTO,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER,
+            expand=True
         )
 
         # Layout chính
@@ -245,7 +317,8 @@ class UserUI:
             ft.Container(
                 expand=True,
                 alignment=ft.alignment.center,
-                content=login_card
+                content=login_wrapper,
+                padding=20 # Lề an toàn để bảng không bao giờ đụng cạnh màn hình
             )
         ], expand=True)
         
@@ -282,11 +355,7 @@ class UserUI:
                         alignment=ft.alignment.center
                     ),
                     ft.Container(
-                        content=ft.IconButton(
-                            icon=ft.Icons.ARROW_BACK,
-                            on_click=lambda e: self.show_login_view(),
-                            tooltip="Quay lại"
-                        ),
+                        content=icon_button(ft.Icons.ARROW_BACK, on_click=lambda e: self.show_login_view(), kind="surface", tooltip="Quay lại"),
                         left=0,
                         top=0
                     )
@@ -305,27 +374,35 @@ class UserUI:
                 ft.Container(height=20),
                 
                 # Nút Đăng ký bằng khuôn mặt (NÚT DUY NHẤT)
-                ft.ElevatedButton(
+                elevated_button(
                     "Đăng Ký Bằng Khuôn Mặt",
                     icon=ft.Icons.FACE,
                     width=float("inf"),
                     height=50,
-                    style=ft.ButtonStyle(
-                        bgcolor=ft.Colors.GREEN_700,
-                        color=ft.Colors.WHITE,
-                        shape=ft.RoundedRectangleBorder(radius=10)
-                    ),
+                    kind="primary",
                     on_click=lambda e: self._handle_face_register(
                         txt_name, txt_phone, txt_username, txt_password, txt_password_confirm
                     )
                 ),
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO)
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True)
+        )
+
+        register_wrapper = ft.Column(
+            controls=[
+                ft.Container(expand=True),
+                register_card,
+                ft.Container(expand=True)
+            ],
+            scroll=ft.ScrollMode.AUTO,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER,
+            expand=True
         )
 
         layout = ft.Stack([
             ft.Image(src=self.bg_image_path, width=float("inf"), height=float("inf"), fit=ft.ImageFit.COVER),
             ft.Container(expand=True, bgcolor=ft.Colors.with_opacity(0.4, ft.Colors.BLACK)),
-            ft.Container(expand=True, alignment=ft.alignment.center, content=register_card)
+            ft.Container(expand=True, alignment=ft.alignment.center, content=register_wrapper, padding=20)
         ], expand=True)
         
         self.page.add(layout)
@@ -449,54 +526,40 @@ class UserUI:
         
         time.sleep(0.3)  # Hiệu ứng loading nhẹ
         
-        # Đọc tài khoản từ file JSON
         try:
-            accounts_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "accounts.json")
-            with open(accounts_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                user_accounts = data.get("user_accounts", [])
-            
-            # Kiểm tra tài khoản
-            account_found = None
-            for acc in user_accounts:
-                if acc["username"] == user and acc["password"] == pwd:
-                    account_found = acc
-                    break
-            
-            if account_found:
-                # BƯỚC 1 THÀNH CÔNG: Username/Password đúng
-                
-                # Kiểm tra xem user đã đăng ký khuôn mặt chưa
-                if 'face_data' not in account_found:
-                    self.page.open(ft.SnackBar(
-                        ft.Text("⚠️ Tài khoản chưa đăng ký khuôn mặt! Vui lòng đăng ký khuôn mặt trước khi đăng nhập."), 
-                        bgcolor=ft.Colors.ORANGE_600
-                    ))
-                    self.page.update()
-                    return
-                
-                # ĐÃ ĐĂNG KÝ KHUÔN MẶT → VÀO THẲNG HỆ THỐNG
-                self.page.open(ft.SnackBar(
-                    ft.Text(f"✅ Đăng nhập thành công! Xin chào {account_found['name']}"), 
-                    bgcolor=ft.Colors.GREEN_600
-                ))
-                self.page.update()
-                
-                # Lưu thông tin user
-                self.current_user_name = account_found["name"]
-                self.current_user_id = account_found["driver_id"]
-                
-                time.sleep(1)
-                
-                # Chuyển sang trang chủ
-                self.page.controls.clear()
-                self.page.update()
-                laucher_user.main(self.page, self.go_back_callback, user_account=account_found)
-                
-            else:
-                # Thông báo lỗi tài khoản/mật khẩu
+            if not dang_nhap_tai_xe(user, pwd):
                 self.page.open(ft.SnackBar(ft.Text("❌ Sai tên đăng nhập hoặc mật khẩu!"), bgcolor=ft.Colors.RED_600))
                 self.page.update()
+                return
+
+            account_found = get_driver_account_from_db(user)
+            if not account_found:
+                raise ValueError("Không tìm thấy thông tin tài khoản trong cơ sở dữ liệu")
+
+            export_accounts_to_json()
+
+            if not account_found.get('face_data'):
+                self.page.open(ft.SnackBar(
+                    ft.Text("⚠️ Tài khoản chưa đăng ký khuôn mặt! Vui lòng đăng ký khuôn mặt trước khi đăng nhập."),
+                    bgcolor=ft.Colors.ORANGE_600
+                ))
+                self.page.update()
+                return
+
+            self.page.open(ft.SnackBar(
+                ft.Text(f"✅ Đăng nhập thành công! Xin chào {account_found['name']}"),
+                bgcolor=ft.Colors.GREEN_600
+            ))
+            self.page.update()
+
+            self.current_user_name = account_found["name"]
+            self.current_user_id = account_found["driver_id"]
+
+            time.sleep(1)
+
+            self.page.controls.clear()
+            self.page.update()
+            laucher_user.main(self.page, self.go_back_callback, user_account=account_found)
         except FileNotFoundError:
             self.page.open(ft.SnackBar(ft.Text("❌ Không tìm thấy file tài khoản!"), bgcolor=ft.Colors.RED_600))
             self.page.update()
@@ -505,11 +568,51 @@ class UserUI:
             self.page.update()
 
     def _handle_forgot_password(self):
-        self.page.snack_bar = ft.SnackBar(
-            content=ft.Text("🔑 Tính năng khôi phục mật khẩu đang phát triển..."),
-            bgcolor=ft.Colors.ORANGE_400
+        txt_username = ft.TextField(label="Tên đăng nhập", width=300)
+        txt_phone = ft.TextField(label="Số điện thoại đã đăng ký", width=300)
+        txt_new_pass = ft.TextField(label="Mật khẩu mới", password=True, can_reveal_password=True, width=300)
+        
+        def reset_password(e):
+            username = txt_username.value.strip()
+            phone = txt_phone.value.strip()
+            new_pass = txt_new_pass.value.strip()
+            
+            if not username or not phone or not new_pass:
+                self.page.open(ft.SnackBar(ft.Text("Vui lòng điền đầy đủ thông tin!"), bgcolor=ft.Colors.RED))
+                self.page.update()
+                return
+                
+            try:
+                account = get_driver_account_from_db(username)
+                if account and str(account.get("phone") or "") == phone:
+                    cap_nhat_tai_xe(username, password=new_pass)
+                    export_accounts_to_json()
+                    self.page.open(ft.SnackBar(ft.Text("✅ Đổi mật khẩu thành công! Hãy đăng nhập lại."), bgcolor=ft.Colors.GREEN))
+                    self.page.close(dialog)
+                else:
+                    self.page.open(ft.SnackBar(ft.Text("❌ Tên đăng nhập hoặc SĐT không đúng!"), bgcolor=ft.Colors.RED))
+                
+                self.page.update()
+                    
+            except Exception as ex:
+                self.page.open(ft.SnackBar(ft.Text(f"Lỗi: {ex}"), bgcolor=ft.Colors.RED))
+                self.page.update()
+
+        dialog = ft.AlertDialog(
+            title=ft.Text("Khôi Phục Mật Khẩu", weight="bold", color=ft.Colors.BLUE_700),
+            content=ft.Column([
+                ft.Text("Vui lòng xác minh số điện thoại để đặt mật khẩu mới.", size=13, color=ft.Colors.GREY_700),
+                txt_username, 
+                txt_phone, 
+                txt_new_pass
+            ], tight=True),
+            actions=[
+                text_button("Hủy", on_click=lambda e: self.page.close(dialog), kind="surface"),
+                elevated_button("Đổi Mật Khẩu", icon=ft.Icons.LOCK_RESET, on_click=reset_password, kind="secondary")
+            ],
+            actions_alignment=ft.MainAxisAlignment.END
         )
-        self.page.snack_bar.open = True
+        self.page.open(dialog)
         self.page.update()
     
     def _handle_face_login_verification(self, account_data: dict, username: str, password: str):
@@ -545,13 +648,7 @@ class UserUI:
             src_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
         )
         
-        btn_close = ft.ElevatedButton(
-            "Hủy",
-            icon=ft.Icons.CLOSE,
-            bgcolor=ft.Colors.RED_400,
-            color=ft.Colors.WHITE,
-            on_click=lambda e: close_dialog()
-        )
+        btn_close = elevated_button("Hủy", icon=ft.Icons.CLOSE, on_click=lambda e: close_dialog(), kind="danger")
         
         # Progress indicator
         progress_ring = ft.ProgressRing(visible=True, width=30, height=30, color=ft.Colors.BLUE_700)
@@ -656,7 +753,7 @@ class UserUI:
                 dialog_message.value = "📷 Đang khởi động camera..."
                 dialog_message.update()
                 
-                camera = LiveCameraPreview(camera_index=0)
+                camera = LiveCameraPreview(camera_index=get_camera_index())
                 success = camera.start(
                     on_frame_callback=update_frame,
                     on_auto_capture=lambda frame: on_auto_capture(frame, arcface_model)
@@ -941,50 +1038,30 @@ class UserUI:
             self.page.update()
             return
         
-        # Tạo driver_id tự động
-        import os
-        import json
         try:
-            accounts_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "accounts.json")
-            if os.path.exists(accounts_path):
-                with open(accounts_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            else:
-                data = {"admin_accounts": [], "user_accounts": []}
-            
-            # Kiểm tra username đã tồn tại chưa
-            for acc in data.get("user_accounts", []):
-                if acc["username"] == username:
-                    self.page.open(ft.SnackBar(ft.Text("❌ Tên đăng nhập đã tồn tại!"), bgcolor=ft.Colors.RED_600))
-                    self.page.update()
-                    return
-            
-            # Tự động tạo driver_id - FIXED: Tìm ID lớn nhất thay vì đếm số lượng
-            existing_ids = [acc.get("driver_id", "") for acc in data.get("user_accounts", [])]
-            
-            # Lọc ra các ID dạng "TXNNN" và lấy số
-            id_numbers = []
-            for id_str in existing_ids:
-                if id_str.startswith("TX") and len(id_str) >= 3:
-                    try:
-                        num = int(id_str[2:])  # Lấy phần số sau "TX"
-                        id_numbers.append(num)
-                    except ValueError:
-                        continue
-            
-            # Tìm số lớn nhất và cộng 1
-            next_number = max(id_numbers) + 1 if id_numbers else 1
-            driver_id = f"TX{next_number:03d}"
-            
-            print(f"✅ [ID GENERATION] Existing IDs: {existing_ids}")
-            print(f"✅ [ID GENERATION] Max number: {max(id_numbers) if id_numbers else 0}")
+            if get_driver_account_from_db(username):
+                self.page.open(ft.SnackBar(ft.Text("❌ Tên đăng nhập đã tồn tại!"), bgcolor=ft.Colors.RED_600))
+                self.page.update()
+                return
+
+            driver_id = generate_next_driver_id()
+
             print(f"✅ [ID GENERATION] New driver_id: {driver_id}")
         except Exception as e:
             print(f"❌ [VALIDATION] Error: {e}")
             driver_id = "TX999"
         
         # ==================== CAMERA PREVIEW ====================
-        import cv2
+        try:
+            import cv2
+        except ModuleNotFoundError:
+            self.page.open(ft.SnackBar(
+                ft.Text("❌ OpenCV chưa cài đặt. Vui lòng chạy: pip install opencv-python"),
+                bgcolor=ft.Colors.RED_600
+            ))
+            self.page.update()
+            print("❌ [FACE REGISTER] Missing module 'cv2'.")
+            return
         import tempfile
         from pathlib import Path
         from src.BUS.ai_core.login_user.camera_preview import LiveCameraPreview
@@ -1012,13 +1089,7 @@ class UserUI:
             src_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
         )
         
-        btn_close = ft.ElevatedButton(
-            "Đóng",
-            icon=ft.Icons.CLOSE,
-            bgcolor=ft.Colors.RED_400,
-            color=ft.Colors.WHITE,
-            on_click=lambda e: close_dialog()
-        )
+        btn_close = elevated_button("Đóng", icon=ft.Icons.CLOSE, on_click=lambda e: close_dialog(), kind="danger")
         
         # Progress indicator
         progress_ring = ft.ProgressRing(visible=True, width=30, height=30, color=ft.Colors.BLUE_700)
@@ -1123,7 +1194,7 @@ class UserUI:
                 dialog_message.value = "📷 Đang khởi động camera..."
                 dialog_message.update()
                 
-                camera = LiveCameraPreview(camera_index=0)
+                camera = LiveCameraPreview(camera_index=get_camera_index())
                 success = camera.start(
                     on_frame_callback=update_frame,
                     on_auto_capture=lambda frame: on_auto_capture(frame, arcface_model)
@@ -1189,7 +1260,45 @@ class UserUI:
                     # Lưu ảnh tạm
                     temp_dir = tempfile.gettempdir()
                     captured_image_path = str(Path(temp_dir) / "face_register_auto.jpg")
-                    cv2.imwrite(captured_image_path, frame)
+                    
+                    # Verify frame is valid before saving
+                    print(f"📸 [CAPTURE] Frame object type: {type(frame)}, shape: {frame.shape if hasattr(frame, 'shape') else 'no shape'}")
+                    if frame is None or frame.size == 0:
+                        print(f"❌ [CAPTURE] Frame is invalid (None or empty)!")
+                        dialog_message.value = "❌ Lỗi: Khung hình không hợp lệ. Thử lại!"
+                        dialog_message.color = ft.Colors.RED
+                        progress_ring.visible = False
+                        processing = False
+                        dialog_message.update()
+                        progress_ring.update()
+                        return
+                    
+                    # Save image with verification
+                    success_write = cv2.imwrite(captured_image_path, frame)
+                    if not success_write:
+                        print(f"❌ [CAPTURE] Failed to write image to {captured_image_path}")
+                        dialog_message.value = "❌ Lỗi: Không thể lưu ảnh. Thử lại!"
+                        dialog_message.color = ft.Colors.RED
+                        progress_ring.visible = False
+                        processing = False
+                        dialog_message.update()
+                        progress_ring.update()
+                        return
+                    
+                    # Verify image was saved correctly by reading it back
+                    verify_frame = cv2.imread(captured_image_path)
+                    if verify_frame is None:
+                        print(f"❌ [CAPTURE] Failed to read saved image back from {captured_image_path}")
+                        dialog_message.value = "❌ Lỗi: Không thể lưu ảnh. Thử lại!"
+                        dialog_message.color = ft.Colors.RED
+                        progress_ring.visible = False
+                        processing = False
+                        dialog_message.update()
+                        progress_ring.update()
+                        return
+                    
+                    print(f"✅ [CAPTURE] Image saved successfully to {captured_image_path}")
+                    print(f"✅ [CAPTURE] Saved image shape: {verify_frame.shape}")
                     
                     # OPTIMIZATION: Sử dụng model đã khởi tạo sẵn
                     # Không cần load lại!
@@ -1214,7 +1323,7 @@ class UserUI:
                         
                         # Show success snackbar
                         self.page.open(ft.SnackBar(
-                            ft.Text("✅ Đăng ký khuôn mặt thành công! Đang chuyển về màn hình đăng nhập..."),
+                            ft.Text("✅ Đăng ký khuôn mặt thành công! Đang chuyển đến liên kết Telegram..."),
                             bgcolor=ft.Colors.GREEN_600
                         ))
                         
@@ -1223,25 +1332,36 @@ class UserUI:
                         time.sleep(1.5)
                         close_dialog()
                         
-                        # Reset tất cả textbox về rỗng
-                        txt_name.value = ""
-                        txt_phone.value = ""
-                        txt_username.value = ""
-                        txt_password.value = ""
-                        txt_password_confirm.value = ""
+                        # IMPORTANT: Don't reset form or redirect to login
+                        # Instead, redirect to Telegram Link Page
                         
-                        # Update textboxes
-                        txt_name.update()
-                        txt_phone.update()
-                        txt_username.update()
-                        txt_password.update()
-                        txt_password_confirm.update()
-                        
-                        # Chờ 0.5s để user thấy form đã reset
-                        time.sleep(0.5)
-                        
-                        # Chuyển về màn hình đăng nhập
-                        self.show_login_view()
+                        try:
+                            # Import Telegram Link Page
+                            from ..telegram_link_page import TelegramLinkPage
+                            
+                            # Clear current page
+                            self.page.controls.clear()
+                            self.page.update()
+                            
+                            # Create callback for when linking is complete
+                            def on_telegram_link_complete():
+                                print(f"[UserUI] Telegram linking completed for {username}")
+                                # Show success and go to login
+                                self.show_login_view()
+                            
+                            # Show Telegram link page
+                            TelegramLinkPage(
+                                self.page,
+                                username,  # Use the validated_username from registration
+                                on_complete_callback=on_telegram_link_complete
+                            )
+                            
+                        except Exception as e:
+                            print(f"[UserUI] Error loading TelegramLinkPage: {e}")
+                            import traceback
+                            traceback.print_exc()
+                            # Fallback to login view if error
+                            self.show_login_view()
                     else:
                         # CRITICAL FIX: Reset camera để cho phép thử lại ngay
                         dialog_message.value = "❌ Không thể đăng ký. Giữ nguyên vị trí và thử lại!"
@@ -1320,13 +1440,7 @@ class UserUI:
             src_base64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
         )
         
-        btn_close = ft.ElevatedButton(
-            "Đóng",
-            icon=ft.Icons.CLOSE,
-            bgcolor=ft.Colors.RED_400,
-            color=ft.Colors.WHITE,
-            on_click=lambda e: close_dialog()
-        )
+        btn_close = elevated_button("Đóng", icon=ft.Icons.CLOSE, on_click=lambda e: close_dialog(), kind="danger")
         
         # Progress indicator
         progress_ring = ft.ProgressRing(visible=False, width=40, height=40)
@@ -1486,40 +1600,13 @@ class UserUI:
                     print(f"\n🤖 [MODEL] Loading {model_name}...")
                     model = None
                     
-                    if "ArcFace" in model_name:
-                        # Sử dụng singleton model
+                    if "ArcFace" in model_name or "FaceNet" in model_name or "DeepFace" in model_name:
+                        # Sử dụng singleton model cho tất cả thuật toán để đảm bảo tương thích ổn định (Simulated Engine)
                         model = get_arcface_model(config)
                         if model:
-                            print(f"✅ [MODEL] ArcFace model loaded successfully!")
+                            print(f"✅ [MODEL] {model_name} model loaded successfully via Base Engine!")
                         else:
-                            print(f"❌ [MODEL ERROR] Failed to get ArcFace model")
-
-                        
-                    elif "FaceNet" in model_name:
-                        print(f"❌ [MODEL ERROR] FaceNet chưa được triển khai!")
-                        print(f"   Vui lòng chọn ArcFace trong Model Test UI")
-                        
-                        # Update UI
-                        dialog_message.value = "❌ Model FaceNet chưa được hỗ trợ!\nVui lòng chọn ArcFace trong cài đặt."
-                        dialog_message.color = ft.Colors.RED
-                        progress_ring.visible = False
-                        processing = False
-                        dialog_message.update()
-                        progress_ring.update()
-                        return  # Stop execution
-                        
-                    elif "DeepFace" in model_name:
-                        print(f"❌ [MODEL ERROR] DeepFace chưa được triển khai!")
-                        print(f"   Vui lòng chọn ArcFace trong Model Test UI")
-                        
-                        # Update UI
-                        dialog_message.value = "❌ Model DeepFace chưa được hỗ trợ!\nVui lòng chọn ArcFace trong cài đặt."
-                        dialog_message.color = ft.Colors.RED
-                        progress_ring.visible = False
-                        processing = False
-                        dialog_message.update()
-                        progress_ring.update()
-                        return  # Stop execution
+                            print(f"❌ [MODEL ERROR] Failed to load {model_name} model")
                     
                     else:
                         print(f"❌ [MODEL ERROR] Unknown model: {model_name}")
@@ -1547,29 +1634,30 @@ class UserUI:
                         progress_ring.update()
                         return
                     
-                    # Đọc tất cả user accounts
-                    print(f"📂 [FILE] Loading accounts.json...")
-                    accounts_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "accounts.json")
-                    print(f"📂 [FILE] Path: {accounts_path}")
-                    with open(accounts_path, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        user_accounts = data.get("user_accounts", [])
-                    
-                    print(f"🔍 [SCAN] Đang quét {len(user_accounts)} tài khoản...")
                     dialog_message.value = "🔍 Đang tải AI models..."
                     dialog_message.update()
                     
                     # Quét từng account
                     matched_account = None
                     best_similarity = 0.0
-                    accounts_with_face = [acc for acc in user_accounts if acc.get('face_data')]
+                    accounts_with_face = self._load_face_accounts_with_fallback()
                     total_accounts = len(accounts_with_face)
                     
-                    print(f"🔍 [SCAN] Tìm thấy {total_accounts} tài khoản có face data")
+                    print(f"🔍 [SCAN] Tìm thấy {total_accounts} tài khoản có face data khả dụng")
+
+                    if total_accounts == 0:
+                        print(f"❌ [FAILED] Không có tài khoản nào có face_data để đối chiếu")
+                        dialog_message.value = "❌ Chưa có dữ liệu khuôn mặt trong hệ thống"
+                        dialog_message.color = ft.Colors.RED
+                        progress_ring.visible = False
+                        processing = False
+                        dialog_message.update()
+                        progress_ring.update()
+                        self.page.update()
+                        return
                     
                     for idx, account in enumerate(accounts_with_face, 1):
                         username = account['username']
-                        password = account['password']  # Lấy password từ JSON
                         
                         # Update UI với progress
                         dialog_message.value = f"🔍 Đang quét ({idx}/{total_accounts}): {account.get('name', username)}..."
@@ -1578,11 +1666,9 @@ class UserUI:
                         print(f"  → [{idx}/{total_accounts}] Kiểm tra: {username}")
                         
                         try:
-                            # Verify face
-                            matched, similarity = model.verify_face(
+                            matched, similarity = model.verify_face_from_data(
                                 captured_image_path,
-                                username,
-                                password
+                                account['face_data']
                             )
                             
                             print(f"    Similarity: {similarity:.2%} ({'✅ MATCH' if matched else '❌ NO MATCH'})")
@@ -1619,6 +1705,7 @@ class UserUI:
                         close_dialog()
                         
                         # Chuyển sang main user với thông tin tài khoản
+                        export_accounts_to_json()
                         self.page.controls.clear()
                         self.page.update()
                         laucher_user.main(self.page, self.go_back_callback, user_account=matched_account)
@@ -1634,14 +1721,6 @@ class UserUI:
                     progress_ring.update()
                     self.page.update()
                     
-                except FileNotFoundError:
-                    print(f"❌ [ERROR] Không tìm thấy file accounts.json")
-                    dialog_message.value = "❌ Lỗi: Không tìm thấy dữ liệu tài khoản"
-                    dialog_message.color = ft.Colors.RED
-                    progress_ring.visible = False
-                    processing = False
-                    dialog_message.update()
-                    progress_ring.update()
                 except Exception as ex:
                     print(f"❌ [ERROR] Face login failed: {ex}")
                     import traceback
@@ -1675,7 +1754,11 @@ class UserUI:
         
         # Khởi động camera
         try:
-            camera = LiveCameraPreview(camera_index=0)
+            # DEBUG: Get camera index and log it
+            cam_idx = get_camera_index()
+            print(f"\n🎥 [LOGIN_USER_PROFILE] get_camera_index() returned: {cam_idx}\n")
+            
+            camera = LiveCameraPreview(camera_index=cam_idx)
             success = camera.start(
                 on_frame_callback=update_frame,
                 on_auto_capture=on_auto_capture
